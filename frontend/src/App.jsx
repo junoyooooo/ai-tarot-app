@@ -92,7 +92,7 @@ export default function App() {
 
     try {
       // 2. FastAPI SSE 스트리밍 엔드포인트 호출 (배포 환경 지원)
-      const apiBase = import.meta.env.VITE_API_BASE_URL || '';
+      const apiBase = import.meta.env.VITE_API_BASE_URL || 'https://ai-tarot-app-tznp.onrender.com';
       const response = await fetch(`${apiBase}/api/tarot/reading/stream`, {
         method: 'POST',
         headers: {

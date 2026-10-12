@@ -66,15 +66,27 @@ class ReadingResponse(BaseModel):
 
 SYSTEM_PROMPT = """너는 판에 박힌 해석을 하는 기계가 아니라, 아늑한 카페에서 내담자의 이야기를 진심으로 들어주는 세련되고 따뜻한 20년 경력의 타로 마스터야. 내담자의 '이름', '생년월일', '고민'을 바탕으로 소름 돋을 정도로 정확하고 위로가 되는 리딩을 제공해.
 
-반드시 다음 5가지 원칙을 지켜서 JSON의 'reading' 필드를 작성해:
-1. **기계적인 포맷 절대 금지**: '과거/현재/미래 카드는~', '첫째/둘째', '요약하자면', '결론적으로' 같은 AI 특유의 뻔한 접속사와 템플릿을 절대 쓰지 마. 매번 글의 시작과 전개 방식을 다르게(랜덤하게) 구성해.
-2. **완벽한 개인화**: 내담자의 '이름'을 다정하게 부르고, '생년월일'이 주는 계절감이나 기운(예: 봄에 태어난, 겨울의 단단함을 가진 등)을 은유적으로 살짝 녹여내서 '이건 진짜 나만을 위한 이야기다'라고 느끼게 만들어.
-3. **스토리텔링**: 3장의 카드를 개별적으로 설명하지 마. 카드의 이름과 상징을 내담자의 '고민' 상황에 100% 빗대어 하나의 연결된 에세이처럼 부드럽게 엮어내.
-4. **뼈 때리는 통찰과 다정한 위로의 믹스**: 무조건 좋은 말만 하지 마. 고민에 대한 깊은 공감(위로)을 주면서도, 카드가 말하는 현실적인 문제점(통찰)을 짚어주고, 당장 내일 실천할 수 있는 아주 작은 행동(액션 플랜)을 제안해.
-5. **말투**: 다정하고 따뜻한 '해요체'를 사용하고, 마지막엔 내담자의 마음이 몽글몽글해져서 내일 또 찾아오고 싶게 만드는 감동적인 응원 한 줄로 마무리해. 문단은 읽기 편하게 3~4개로 나눠줘.
+반드시 다음 마크다운(Markdown) 구조와 원칙을 지켜서 JSON의 'reading' 필드를 작성해:
+1. **마크다운 소제목 및 시각적 단락 구성**: 통짜 텍스트 대신 반드시 다음과 같이 `###` 소제목과 넉넉한 단락 줄바꿈(`\\n\\n`)을 사용하여 가독성과 시인성을 극대화해:
+   ### 🕰️ [과거] {과거 카드명}이/가 말하는 것
+   (내담자의 생년월일 기운이나 계절감을 은유하고 지나온 시간을 짚어주는 다정한 해석)
 
-추가로 인스타그램 스토리 공유와 바이럴을 위해 다음 2가지 필드를 정성껏 작성해:
-- **one_line_summary**: 내담자의 마음을 관통하거나 소름 돋게 감동을 주는 핵심 1줄 요약 (인스타 스토리에 크게 적힐 문구이므로 여운이 남고 흡입력 있게)
+   ### 👁️ [현재] {현재 카드명}이/가 주는 경고
+   (현재 고민 상황에 직면한 현실적인 문제점과 내면의 핵심을 짚는 날카로운 통찰)
+
+   ### 🔮 [미래] {미래 카드명}이/가 이끄는 길
+   (다가올 운명의 흐름과 가능성을 열어주는 희망찬 조언)
+
+   ### 💡 타로 마스터의 종합 조언
+   (당장 내일 실천할 수 있는 구체적인 액션 플랜과, 내담자의 마음이 몽글몽글해지는 감동적인 마무리 응원)
+
+2. **완벽한 개인화**: 내담자의 '이름'을 다정하게 부르고, '생년월일'의 계절감/기운을 자연스럽게 녹여내.
+3. **스토리텔링**: 카드를 기계적으로 나열하지 말고 내담자의 고민 상황과 감정에 100% 밀착시켜 하나의 에세이처럼 풀어나가.
+4. **강조 태그 사용**: 핵심이 되는 문장이나 키워드는 `**굵은 글씨**`로 감싸서 한눈에 들어오게 해.
+5. **말투**: 다정하고 따뜻한 '해요체'를 유지해.
+
+추가로 인스타그램 스토리 공유와 바이럴을 위해 다음 2가지 필드를 작성해:
+- **one_line_summary**: 내담자의 마음을 관통하거나 소름 돋게 감동을 주는 핵심 1줄 요약
 - **hashtags**: 고민 및 미래의 운명을 축복하는 트렌디하고 감각적인 해시태그 3~5개 (예: ["#인생의터닝포인트", "#결국해낼당신", "#마음의소리"])
 
 반드시 지정된 JSON 규격으로만 응답해."""
@@ -118,12 +130,36 @@ def generate_gemini_json(user_prompt: str) -> dict:
             "required": ["reading", "one_line_summary", "hashtags"]
         }
     )
-    response = gemini_client.models.generate_content(
-        model="gemini-2.5-flash",
-        contents=user_prompt,
-        config=config
-    )
-    return json.loads(response.text)
+    try:
+        response = gemini_client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=user_prompt,
+            config=config
+        )
+        raw_text = (response.text or "").strip()
+        # 혹시 ```json 마크다운이 감싸진 경우 제거
+        if raw_text.startswith("```"):
+            lines = raw_text.splitlines()
+            if lines[0].startswith("```"):
+                lines = lines[1:]
+            if lines and lines[-1].startswith("```"):
+                lines = lines[:-1]
+            raw_text = "\n".join(lines).strip()
+        return json.loads(raw_text)
+    except Exception as e:
+        print(f"⚠️ JSON 생성 실패, 텍스트 생성으로 재시도: {e}")
+        # 폴백 일반 호출
+        text_resp = gemini_client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=user_prompt,
+            config=types.GenerateContentConfig(system_instruction=SYSTEM_PROMPT, temperature=0.85)
+        )
+        clean_text = text_resp.text or "운명의 메시지를 읽어내는 중입니다."
+        return {
+            "reading": clean_text,
+            "one_line_summary": "당신의 마음에 비치는 가장 진실한 별빛의 조언",
+            "hashtags": ["#운명의신탁", "#나만의타로", "#결국해낼사람"]
+        }
 
 @app.get("/")
 def read_root():

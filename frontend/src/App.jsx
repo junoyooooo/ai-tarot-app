@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Sparkles, Moon, Sun, Wand2, RefreshCw, CreditCard, Lock, Camera, Share2, Download } from 'lucide-react';
 import html2canvas from 'html2canvas';
+import ReactMarkdown from 'react-markdown';
 
 export default function App() {
   const [formData, setFormData] = useState({
@@ -113,33 +114,38 @@ export default function App() {
         if (done) break;
 
         buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n\n');
-        buffer = lines.pop() || ''; // 남은 버퍼 보관
+        // \r\n 또는 \n\n 등 다양한 스트리밍 청크 구분자 안전 분리
+        const events = buffer.split(/\r?\n\r?\n/);
+        buffer = events.pop() || '';
 
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            const dataStr = line.slice(6).trim();
-            if (!dataStr) continue;
-            try {
-              const parsed = JSON.parse(dataStr);
-              if (parsed.type === 'cards') {
-                setCards(parsed.data);
-                setIsLoading(false); // 카드 도착 시 즉시 화면에 카드 뒷면 렌더링
-              } else if (parsed.type === 'content') {
-                setAiReading((prev) => prev + parsed.data);
-              } else if (parsed.type === 'meta') {
-                setShareMetadata({
-                  one_line_summary: parsed.data.one_line_summary || '',
-                  hashtags: parsed.data.hashtags || []
-                });
-              } else if (parsed.type === 'done') {
-                setIsStreamComplete(true);
-              } else if (parsed.type === 'error') {
-                console.error('스트리밍 에러:', parsed.data);
-                setAiReading((prev) => prev + '\n[오류: AI 답변 생성 중 문제 발생]');
+        for (const evt of events) {
+          const lines = evt.split(/\r?\n/);
+          for (const line of lines) {
+            if (line.startsWith('data:')) {
+              const dataStr = line.replace(/^data:\s*/, '').trim();
+              if (!dataStr) continue;
+              try {
+                const parsed = JSON.parse(dataStr);
+                if (parsed.type === 'cards') {
+                  setCards(parsed.data);
+                  setIsLoading(false);
+                } else if (parsed.type === 'content') {
+                  setAiReading((prev) => prev + parsed.data);
+                } else if (parsed.type === 'meta') {
+                  setShareMetadata({
+                    one_line_summary: parsed.data.one_line_summary || '',
+                    hashtags: parsed.data.hashtags || []
+                  });
+                } else if (parsed.type === 'done') {
+                  setIsStreamComplete(true);
+                } else if (parsed.type === 'error') {
+                  console.error('스트리밍 백엔드 에러:', parsed.data);
+                  // 백엔드 에러 원인을 사용자에게 친절하게 표시
+                  setAiReading((prev) => prev ? prev : '우주의 기운이 잠시 흔들렸습니다. 다시 시도해 주세요.');
+                }
+              } catch (err) {
+                console.error('SSE JSON 파싱 스킵:', dataStr, err);
               }
-            } catch (err) {
-              console.error('SSE 파싱 에러:', err);
             }
           }
         }
@@ -175,24 +181,57 @@ export default function App() {
     if (!shareCardRef.current) return;
     setIsCapturing(true);
     try {
-      // 폰트 및 이미지 로딩 보장을 위한 딜레이
-      await new Promise((resolve) => setTimeout(resolve, 300));
+      await new Promise((resolve) => setTimeout(resolve, 350));
       
       const canvas = await html2canvas(shareCardRef.current, {
-        scale: 2, // 고해상도 (레티나 디스플레이 선명도)
+        scale: 2,
         useCORS: true,
         allowTaint: true,
-        backgroundColor: null,
+        backgroundColor: '#D8B4E2',
+        logging: false,
       });
 
-      const image = canvas.toDataURL('image/png');
-      const link = document.createElement('a');
-      link.href = image;
-      link.download = `AI타로_인스타스토리_${formData.name || '운명'}.png`;
-      link.click();
+      const fileName = `AI타로_인스타스토리_${formData.name || '운명'}.png`;
+
+      // 1. 모바일 기기: Web Share API 지원 시 바로 사진 저장/인스타 공유 시트 띄우기
+      if (navigator.share && navigator.canShare) {
+        try {
+          const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+          if (blob) {
+            const file = new File([blob], fileName, { type: 'image/png' });
+            if (navigator.canShare({ files: [file] })) {
+              await navigator.share({
+                files: [file],
+                title: `${formData.name || '내담자'}님의 AI 타로 운명 신탁`,
+                text: shareMetadata.one_line_summary || '오늘의 AI 타로 운세 결과',
+              });
+              setIsCapturing(false);
+              return;
+            }
+          }
+        } catch (shareErr) {
+          console.log('Web Share 취소 또는 미지원, 일반 다운로드로 전환:', shareErr);
+        }
+      }
+
+      // 2. 모바일 브라우저/PC 공통 Blob 다운로드 (iOS 사파리/안드로이드 크롬 완벽 호환)
+      canvas.toBlob((blob) => {
+        if (!blob) {
+          throw new Error('Canvas blob generation failed');
+        }
+        const blobUrl = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = blobUrl;
+        link.download = fileName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 1500);
+      }, 'image/png');
+
     } catch (error) {
       console.error('스토리 이미지 캡처 실패:', error);
-      alert('이미지 생성 중 문제가 발생했습니다. 다시 시도해 주세요.');
+      alert('이미지 생성 중 문제가 발생했습니다. 브라우저 설정을 확인해 주세요.');
     } finally {
       setIsCapturing(false);
     }
@@ -458,9 +497,38 @@ export default function App() {
                     )}
                   </div>
 
-                  <div className="text-gray-800 text-sm sm:text-base leading-relaxed space-y-3 font-normal whitespace-pre-line">
+                  <div className="text-gray-800 text-sm sm:text-base leading-relaxed">
                     {aiReading ? (
-                      aiReading
+                      <ReactMarkdown
+                        components={{
+                          h3: ({ node, ...props }) => (
+                            <h3
+                              className="text-base sm:text-lg font-extrabold text-purple-900 mt-5 mb-2 pb-1 border-b border-purple-100 flex items-center gap-1.5"
+                              {...props}
+                            />
+                          ),
+                          p: ({ node, ...props }) => (
+                            <p
+                              className="text-gray-700 leading-[1.8] mb-4 font-normal tracking-normal"
+                              {...props}
+                            />
+                          ),
+                          strong: ({ node, ...props }) => (
+                            <strong
+                              className="font-bold text-purple-900 bg-purple-50 px-1 py-0.5 rounded"
+                              {...props}
+                            />
+                          ),
+                          ul: ({ node, ...props }) => (
+                            <ul className="list-disc list-inside mb-4 space-y-1 text-gray-700" {...props} />
+                          ),
+                          li: ({ node, ...props }) => (
+                            <li className="leading-relaxed" {...props} />
+                          )
+                        }}
+                      >
+                        {aiReading}
+                      </ReactMarkdown>
                     ) : (
                       <div className="py-6 text-center text-gray-400">
                         답변을 준비하고 있습니다...

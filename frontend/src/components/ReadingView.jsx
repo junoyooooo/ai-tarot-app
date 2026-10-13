@@ -28,6 +28,7 @@ const md = {
 };
 
 const HEADING_RE = /^\s*(?:\S+\s+)?\[(과거|현재|미래)\]\s*(.*)$/;
+const MEANING_RE = /(?:^|\n)(?:>\s*)?\*\*핵심(?:\s*의미)?[:：]\*\*\s*([^\n]+)/;
 
 function parseSections(text) {
   const parts = text.split(/^### /m);
@@ -35,9 +36,18 @@ function parseSections(text) {
   const sections = parts.map((raw) => {
     const nl = raw.indexOf('\n');
     const head = (nl === -1 ? raw : raw.slice(0, nl)).trim();
-    const body = nl === -1 ? '' : raw.slice(nl + 1).trim();
+    let body = nl === -1 ? '' : raw.slice(nl + 1).trim();
     const m = HEADING_RE.exec(head);
-    if (m) return { kind: 'card', tag: m[1], title: m[2], body };
+    if (m) {
+      let meaning = '';
+      let readingBody = body;
+      const mm = MEANING_RE.exec(body);
+      if (mm) {
+        meaning = mm[1].trim();
+        readingBody = (body.slice(0, mm.index) + body.slice(mm.index + mm[0].length)).trim();
+      }
+      return { kind: 'card', tag: m[1], title: m[2], meaning, reading: readingBody, body };
+    }
     return { kind: 'note', tag: '오늘의 조언', title: head.replace(/^\S+\s+/, '') || head, body };
   });
   return { intro: intro.trim(), sections };
@@ -58,20 +68,33 @@ export default function ReadingView({ reading, isComplete, cards = [] }) {
       {sections.map((s, i) => {
         const style = SECTION_STYLES[Math.min(i, SECTION_STYLES.length - 1)];
         const card = s.kind === 'card' ? cards[i] : null;
-        const body = !isComplete && i === lastIdx ? closeOpenMarkdown(s.body) : s.body;
+        const meaningText = s.meaning || (card ? card.meaning : '');
+        const rawContent = s.reading !== undefined && s.reading !== '' ? s.reading : s.body;
+        const body = !isComplete && i === lastIdx ? closeOpenMarkdown(rawContent) : rawContent;
+
         return (
           <section key={i} className={`relative rounded-[28px] ${style.bg} p-5 pr-5 animate-fade-in-up overflow-hidden`}>
             <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0">
+              <div className="min-w-0 flex-1">
                 <span className={`inline-block text-[12px] font-extrabold ${style.accent} bg-white/75 rounded-full px-3 py-1`}>
                   {s.tag}
                 </span>
-                <h3 className="mt-2.5 text-[17px] font-extrabold leading-snug text-ink break-keep">{s.title}</h3>
+                <h3 className="mt-2 text-[17px] font-extrabold leading-snug text-ink break-keep">{s.title}</h3>
+
+                {/* 카드별 기본 의미: 작은 보조 텍스트 (부제 느낌) */}
+                {s.kind === 'card' && meaningText && (
+                  <div className="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-white/75 border border-white/60 text-[12px] text-ink/80 max-w-full">
+                    <span className={`text-[10.5px] font-black ${style.accent} shrink-0`}>기본 의미</span>
+                    <span className="truncate">{meaningText}</span>
+                  </div>
+                )}
               </div>
               {card && <Mascot id={card.id} className="w-16 h-16 shrink-0 -mt-1" />}
             </div>
+
+            {/* 메인 본문 (고민에 적용된 해석 2~3문장 / 종합 조언) */}
             <div className="mt-3">
-              {body ? <ReactMarkdown components={md}>{body}</ReactMarkdown> : <p className="text-sm text-mute">…</p>}
+              {body ? <ReactMarkdown components={md}>{body}</ReactMarkdown> : <p className="text-sm text-mute">해석을 작성하고 있어요…</p>}
             </div>
           </section>
         );

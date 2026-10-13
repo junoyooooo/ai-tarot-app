@@ -417,17 +417,20 @@ export function generateLocalReading(name, birthdate, concern, cards) {
 
 ${cat.opener}
 
-### 🕰️ [과거] ${getKoName(past)} 카드가 비추는 지난 시간
+### 🕰️ [과거] ${getKoName(past)}
+**핵심 의미:** ${past.meaning}
 ${fill(past.id, 0)}
 
-### 👁️ [현재] ${getKoName(present)} 카드가 짚어주는 지금
+### 👁️ [현재] ${getKoName(present)}
+**핵심 의미:** ${present.meaning}
 ${fill(present.id, 1)}
 
-### 🔮 [미래] ${getKoName(future)} 카드가 여는 앞으로의 길
+### 🔮 [미래] ${getKoName(future)}
+**핵심 의미:** ${future.meaning}
 ${fill(future.id, 2)}
 
-### 💡 마스터의 한마디
-**${cat.action}** 정답을 서둘러 찾지 않아도 괜찮아요. 카드는 방향을 비춰 줄 뿐이고, 걸어가는 건 ${userName}님이에요. 오늘 하루도 수고 많으셨어요.`;
+### 💡 마스터의 종합 조언
+**${cat.action}** 카드별로 비추어 본 흐름처럼, 지나온 고민은 결국 새로운 길을 여는 밑거름이 되어줄 거예요. 정답을 서둘러 찾지 않아도 괜찮아요. 카드는 방향을 비춰 줄 뿐이고, 한 걸음씩 걸어가는 건 ${userName}님이에요. 오늘 하루도 수고 많으셨어요.`;
 
   return {
     cards,

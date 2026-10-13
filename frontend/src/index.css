@@ -221,6 +221,20 @@
   animation: popIn 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
 }
 
+@keyframes shineSweep {
+  0% { transform: translateX(-130%) skewX(-20deg); }
+  55%, 100% { transform: translateX(260%) skewX(-20deg); }
+}
+
+.share-shine::after {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 38%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.55), transparent);
+  animation: shineSweep 3.2s ease-in-out infinite;
+}
+
 /* 움직임을 줄이는 설정을 쓰는 사용자 배려 */
 @media (prefers-reduced-motion: reduce) {
   .card-float,
@@ -228,7 +242,8 @@
   .mascot-bounce,
   .animate-fade-in-up,
   .animate-slide-in,
-  .animate-pop-in {
+  .animate-pop-in,
+  .share-shine::after {
     animation: none !important;
   }
   .card-3d-inner {

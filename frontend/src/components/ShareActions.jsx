@@ -210,24 +210,25 @@ export default function ShareActions({ name, cards, summary, hashtags }) {
 
   return (
     <>
-      <div className="grid grid-cols-2 gap-2.5">
+      <button
+        type="button"
+        onClick={handleShare}
+        disabled={isCapturing}
+        className="share-shine relative overflow-hidden w-full rounded-[22px] bg-gradient-to-r from-[#8a45e0] via-[#c04fd6] to-[#ff6fa5] text-white py-4 shadow-soft flex items-center justify-center gap-2.5 text-[17px] font-extrabold cursor-pointer active:scale-[0.98] transition-transform disabled:opacity-70"
+      >
+        <Share2 className="w-5 h-5" aria-hidden="true" />
+        {isCapturing ? '이미지 만드는 중…' : 'SNS에 공유하기'}
+      </button>
+      <p className="mt-1.5 text-center text-[12px] text-mute break-keep">스토리·릴스에 올리면 친구도 오늘의 카드를 볼 수 있어요</p>
+      <div className="mt-2.5 grid grid-cols-1">
         <button
           type="button"
           onClick={handleSave}
           disabled={isCapturing}
-          className="btn-primary py-3.5 rounded-2xl text-[14px] flex items-center justify-center gap-2 cursor-pointer"
+          className="btn-soft py-3 rounded-2xl text-[14px] flex items-center justify-center gap-2 cursor-pointer"
         >
           <Camera className="w-4 h-4" aria-hidden="true" />
-          {isCapturing ? '만드는 중…' : '이미지 저장'}
-        </button>
-        <button
-          type="button"
-          onClick={handleShare}
-          disabled={isCapturing}
-          className="btn-soft py-3.5 rounded-2xl text-[14px] flex items-center justify-center gap-2 cursor-pointer"
-        >
-          <Share2 className="w-4 h-4" aria-hidden="true" />
-          바로 공유
+          이미지로 저장
         </button>
       </div>
 
@@ -245,7 +246,7 @@ export default function ShareActions({ name, cards, summary, hashtags }) {
       </div>
 
       {previewImg && (
-        <div className="fixed inset-0 z-50 bg-ink/60 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label="공유 이미지">
+        <div className="fixed inset-0 z-[90] bg-ink/60 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label="공유 이미지">
           <div className="w-full max-w-sm bg-white rounded-[28px] p-5 shadow-2xl max-h-[92vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-3">
               <div className="flex items-center gap-1.5 text-brand-600 font-bold text-sm">

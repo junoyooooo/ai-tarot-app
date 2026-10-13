@@ -16,6 +16,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
+import cardbox
 import kakao_auth
 import payments
 import play
@@ -611,6 +612,41 @@ def _play_payload(did: str) -> dict:
         "coins": w["coins"],
         "catalog": {k: {"slot": v["slot"], "name": v["name"], "price": v["price"]} for k, v in play.ITEMS.items()},
     }
+
+
+def _cardbox_payload(did: str, granted: Optional[list] = None) -> dict:
+    info = STORE.cardbox_info(did)
+    month = datetime.now(KST).strftime("%Y-%m")
+    stickers = []
+    for key in info["claims"]:
+        if key.startswith("month:"):
+            _, m, need = key.split(":")
+            stickers.append({"month": m, "need": int(need)})
+    return {
+        "total": info["total"],
+        "month": month,
+        "month_count": info["by_month"].get(month, 0),
+        "rank": cardbox.rank_for(info["total"]),
+        "ranks": [{"need": n, "name": nm, "icon": ic, "bonus": b} for n, nm, ic, b in cardbox.RANKS],
+        "month_tiers": [{"need": n, "name": nm, "bonus": b} for n, nm, b in cardbox.MONTH_TIERS],
+        "stickers": stickers,
+        "granted": [{"key": k, "stardust": g, "name": nm} for k, g, nm in (granted or [])],
+    }
+
+
+@app.get("/api/cardbox")
+def cardbox_state(request: Request):
+    return _cardbox_payload(device_id_from(request, required=True))
+
+
+@app.post("/api/cardbox/claim")
+def cardbox_claim(request: Request):
+    """도달한 계급·월간 스티커 보상을 받는다(한 번씩만)."""
+    did = device_id_from(request, required=True)
+    info = STORE.cardbox_info(did)
+    todo = [r for r in cardbox.eligible(info["total"], info["by_month"]) if r[0] not in set(info["claims"])]
+    granted = STORE.cardbox_grant(did, todo, give_stardust=PLAY_ENABLED) if todo else []
+    return _cardbox_payload(did, granted)
 
 
 @app.get("/api/play/state")

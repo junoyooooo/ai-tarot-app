@@ -28,6 +28,7 @@ export const saveProfile = (profile) => write('profile', profile);
 export const getHistory = () => read('history', []);
 
 export function addHistory(entry) {
+  addCardBox(entry); // 상담이 끝나면 공유 카드는 누르지 않아도 자동으로 보관함에 담긴다
   const list = [entry, ...getHistory().filter((e) => e.id !== entry.id)].slice(0, MAX_HISTORY);
   write('history', list);
   return list;
@@ -50,7 +51,7 @@ export const saveDaily = (daily) => write('daily', daily);
 
 export function clearAll() {
   try {
-    ['profile', 'history', 'daily', 'collection', 'memos'].forEach((k) => window.localStorage.removeItem(PREFIX + k));
+    ['profile', 'history', 'daily', 'collection', 'memos', 'cardbox'].forEach((k) => window.localStorage.removeItem(PREFIX + k));
     // 기기 ID(device)는 코인과 연결돼 있어 일부러 지우지 않습니다.
   } catch {
     /* 무시 */
@@ -86,4 +87,37 @@ export function setMemo(iso, text) {
   else delete memos[iso];
   write('memos', memos);
   return memos;
+}
+
+// 카드 보관함: 공유 카드를 다시 그릴 수 있는 최소한의 정보만 담는다. 기록을 지워도 남고, 보관함에서만 지울 수 있다.
+const MAX_CARDBOX = 300;
+const toBoxItem = (e) => ({
+  id: e.id,
+  ts: e.ts,
+  category: e.category,
+  summary: e.summary,
+  hashtags: e.hashtags || [],
+  cards: (e.cards || []).map((c) => ({ id: c.id, position: c.position })),
+});
+const boxable = (e) => e && e.summary && Array.isArray(e.cards) && e.cards.length === 3 && !/자살예방 상담전화 109/.test(e.reading || '');
+
+export function getCardBox() {
+  const saved = read('cardbox', null);
+  if (saved) return saved;
+  const seeded = getHistory().filter(boxable).map(toBoxItem); // 처음 열 때 지금까지의 기록을 옮겨 담는다
+  write('cardbox', seeded);
+  return seeded;
+}
+
+export function addCardBox(entry) {
+  if (!boxable(entry)) return getCardBox();
+  const list = [toBoxItem(entry), ...getCardBox().filter((c) => c.id !== entry.id)].slice(0, MAX_CARDBOX);
+  write('cardbox', list);
+  return list;
+}
+
+export function removeCardBox(id) {
+  const list = getCardBox().filter((c) => c.id !== id);
+  write('cardbox', list);
+  return list;
 }

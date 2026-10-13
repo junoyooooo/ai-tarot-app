@@ -17,6 +17,7 @@ export default function App() {
   const [profile, setProfile] = useState(() => getProfile());
   const [history, setHistory] = useState(() => getHistory());
   const [tab, setTab] = useState('home');
+  const [historyView, setHistoryView] = useState('log'); // 기록 탭 안: 'log' 상담 기록 | 'box' 카드 보관함
   const [seed, setSeed] = useState(null); // 홈에서 분야를 골라 상담으로 넘어올 때 사용
   const [openId, setOpenId] = useState(null); // 기록 상세로 열려 있는 항목
 
@@ -102,11 +103,23 @@ export default function App() {
 
         {/* 상담 화면은 다른 탭에 다녀와도 진행 중인 리딩이 끊기지 않게 계속 켜 둡니다. */}
         <div className={tab === 'consult' ? '' : 'hidden'}>
-          <Consult profile={profile} seed={seed} onSaved={setHistory} onGoHistory={() => goTab('history')} />
+          <Consult
+            profile={profile}
+            seed={seed}
+            onSaved={setHistory}
+            onGoHistory={() => {
+              setHistoryView('log');
+              goTab('history');
+            }}
+            onGoCardBox={() => {
+              setHistoryView('box');
+              goTab('history');
+            }}
+          />
         </div>
 
         {tab === 'history' && (
-          <History profile={profile} history={history} openId={openId} onOpenChange={setOpenId} onChanged={setHistory} onStartConsult={startConsult} />
+          <History profile={profile} history={history} openId={openId} onOpenChange={setOpenId} onChanged={setHistory} onStartConsult={startConsult} view={historyView} onViewChange={setHistoryView} />
         )}
 
         {tab === 'help' && <Help onBack={() => goTab('profile')} />}

@@ -18,7 +18,7 @@ const MAX_CONCERN = 450;
 // 위기 안내(109)가 나온 상담에는 공유·홍보 UI 를 보여 주지 않는다.
 const CRISIS_SHOWN = /자살예방 상담전화 109/;
 
-export default function Consult({ profile, seed, onSaved, onGoHistory }) {
+export default function Consult({ profile, seed, onSaved, onGoHistory, onGoCardBox }) {
   const reading = useReading();
   const [step, setStep] = useState('category'); // category → write → pick → run
   const [category, setCategory] = useState(null);
@@ -388,6 +388,16 @@ export default function Consult({ profile, seed, onSaved, onGoHistory }) {
               <div className="mt-4" />
               {!CRISIS_SHOWN.test(reading.reading) && (
                 <ShareActions name={name} cards={reading.cards} summary={reading.meta.one_line_summary} hashtags={reading.meta.hashtags} />
+              )}
+
+              {!CRISIS_SHOWN.test(reading.reading) && (
+                <p className="mt-3 text-center text-[12.5px] text-mute break-keep">
+                  ✓ 이 카드는{' '}
+                  <button type="button" onClick={onGoCardBox} className="font-bold text-brand-700 underline cursor-pointer">
+                    카드 보관함
+                  </button>
+                  에 자동으로 담겼어요. 나중에 언제든 다시 저장하고 공유할 수 있어요.
+                </p>
               )}
 
               <div className="grid grid-cols-2 gap-2.5 mt-2.5">

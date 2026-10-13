@@ -3,6 +3,7 @@ import { ChevronLeft, ChevronRight, Trash2 } from 'lucide-react';
 import Mascot from '../components/Mascot';
 import ReadingView from '../components/ReadingView';
 import ShareActions from '../components/ShareActions';
+import CardBox from '../components/CardBox';
 import LockedSection from '../components/LockedSection';
 import ReadingExtras from '../components/ReadingExtras';
 import { categoryByKey } from '../lib/categories';
@@ -122,7 +123,7 @@ function Detail({ entry, profile, onBack, onDelete, onChanged }) {
 }
 
 /* ------------------------- 목록 + 달력 ------------------------- */
-export default function History({ profile, history, openId, onOpenChange, onChanged, onStartConsult }) {
+export default function History({ profile, history, openId, onOpenChange, onChanged, onStartConsult, view = 'log', onViewChange }) {
   const now = new Date();
   const [month, setMonth] = useState({ y: now.getFullYear(), m: now.getMonth() });
   const [selectedDay, setSelectedDay] = useState(null);
@@ -183,6 +184,26 @@ export default function History({ profile, history, openId, onOpenChange, onChan
   return (
     <div className="px-5 pt-8 pb-32 animate-fade-in-up">
       <h1 className="text-[26px] font-extrabold tracking-tight text-ink">기록</h1>
+
+      <div className="mt-4 grid grid-cols-2 gap-1 rounded-2xl bg-brand-50 p-1" role="tablist">
+        {[['log', '상담 기록'], ['box', '카드 보관함']].map(([k, label]) => (
+          <button
+            key={k}
+            type="button"
+            role="tab"
+            aria-selected={view === k}
+            onClick={() => onViewChange?.(k)}
+            className={`rounded-xl py-2.5 text-[14px] font-bold cursor-pointer ${view === k ? 'bg-white text-brand-700 shadow-soft' : 'text-mute'}`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {view === 'box' ? (
+        <CardBox profile={profile} />
+      ) : (
+        <>
 
       {/* 달력 */}
       <div className="mt-5 rounded-[28px] bg-brand-50 px-4 py-4">
@@ -339,6 +360,8 @@ export default function History({ profile, history, openId, onOpenChange, onChan
             );
           })}
         </ul>
+      )}
+        </>
       )}
     </div>
   );

@@ -92,6 +92,12 @@ CREATE TABLE IF NOT EXISTS accounts (
     nickname TEXT NOT NULL DEFAULT '',
     created_at REAL NOT NULL
 );
+CREATE TABLE IF NOT EXISTS cardbox_claims (
+    device_id TEXT NOT NULL,
+    key TEXT NOT NULL,
+    created_at REAL NOT NULL,
+    PRIMARY KEY (device_id, key)
+);
 CREATE TABLE IF NOT EXISTS orders (
     order_id TEXT PRIMARY KEY,
     device_id TEXT NOT NULL,
@@ -154,6 +160,36 @@ class Store:
                 (kakao_id, device, nickname, time.time()),
             )
             return device, "created"
+
+    # ------------------------------------------------------------------ 카드 보관함
+    def cardbox_info(self, device_id: str, tz_offset_hours: int = 9) -> Dict[str, Any]:
+        """이 기기의 상담 수(전체, 월별)와 이미 받은 보상 키."""
+        with self._tx() as c:
+            rows = c.execute("SELECT created_at FROM readings WHERE device_id=?", (device_id,)).fetchall()
+            claims = [r["key"] for r in c.execute("SELECT key FROM cardbox_claims WHERE device_id=?", (device_id,)).fetchall()]
+        by_month: Dict[str, int] = {}
+        for r in rows:
+            t = time.gmtime(r["created_at"] + tz_offset_hours * 3600)
+            k = f"{t.tm_year:04d}-{t.tm_mon:02d}"
+            by_month[k] = by_month.get(k, 0) + 1
+        return {"total": len(rows), "by_month": by_month, "claims": claims}
+
+    def cardbox_grant(self, device_id: str, rewards: list, give_stardust: bool) -> list:
+        """아직 받지 않은 보상만 한 번씩 기록하고 별가루를 더한다. 받은 것 [(키, 별가루, 이름)]을 돌려준다."""
+        granted = []
+        with self._tx() as c:
+            for key, bonus, name in rewards:
+                cur = c.execute(
+                    "INSERT OR IGNORE INTO cardbox_claims(device_id, key, created_at) VALUES (?,?,?)",
+                    (device_id, key, time.time()),
+                )
+                if cur.rowcount == 1:
+                    gain = bonus if give_stardust else 0
+                    if gain:
+                        self._play_row(c, device_id)
+                        c.execute("UPDATE play_state SET stardust = stardust + ? WHERE device_id=?", (gain, device_id))
+                    granted.append((key, gain, name))
+        return granted
 
     # ------------------------------------------------------------------ 하루 이용 한도
     GLOBAL_ID = "*"

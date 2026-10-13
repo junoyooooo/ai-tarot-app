@@ -60,3 +60,7 @@ export const playClaim = (run_id, score) => request('/api/play/claim', { method:
 export const playBuy = (item_id) => request('/api/play/buy', { method: 'POST', body: { item_id } });
 export const playEquip = (equipped, main) => request('/api/play/equip', { method: 'POST', body: { equipped, main } });
 export const playExchange = () => request('/api/play/exchange', { method: 'POST' });
+
+// 카드 보관함: 계급과 월간 스티커 (상담 수는 서버가 센다)
+export const fetchCardbox = () => request('/api/cardbox', { timeoutMs: 20000 });
+export const claimCardbox = () => request('/api/cardbox/claim', { method: 'POST', timeoutMs: 20000 });

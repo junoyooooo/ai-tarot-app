@@ -262,3 +262,10 @@
 @media (prefers-reduced-motion: reduce) {
   .deck-shake { animation: none !important; }
 }
+
+/* 첫 화면(타이틀) */
+@keyframes welcomeTwinkle { 0%,100% { opacity: .25; transform: scale(.8); } 50% { opacity: 1; transform: scale(1.25); } }
+.welcome-twinkle { animation: welcomeTwinkle 2.6s ease-in-out infinite; }
+.welcome-start { background: linear-gradient(180deg,#ffe08a,#ffc547); box-shadow: 0 6px 0 #c58f1c, 0 12px 28px rgba(255,197,71,.4); transition: transform .12s, box-shadow .12s; }
+.welcome-start:active { transform: translateY(4px); box-shadow: 0 2px 0 #c58f1c, 0 6px 16px rgba(255,197,71,.35); }
+@media (prefers-reduced-motion: reduce) { .welcome-twinkle { animation: none; } }

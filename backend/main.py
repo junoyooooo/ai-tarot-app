@@ -18,6 +18,7 @@ from pydantic import BaseModel, Field
 
 import cardbox
 import kakao_auth
+import google_auth
 import payments
 import play
 from spreads import CATEGORY_LABELS, position_labels, spread_for
@@ -548,6 +549,24 @@ async def auth_kakao(body: KakaoLogin, request: Request):
     return {"device_id": new_device, "nickname": nickname, "created": status == "created", "switched": new_device != device}
 
 
+class GoogleLogin(BaseModel):
+    credential: str = Field(min_length=20, max_length=4000)
+
+
+@app.post("/api/auth/google")
+async def auth_google(body: GoogleLogin, request: Request):
+    """구글 ID 토큰으로 로그인. 카카오와 같은 방식으로 기기 ID에 연결해요. (회원번호 앞에 g: 를 붙여 카카오와 섞이지 않게 해요.)"""
+    if not google_auth.enabled():
+        raise api_error(404, "auth_disabled", "아직 구글 로그인을 쓸 수 없어요.")
+    device = device_id_from(request, required=True)
+    try:
+        sub, name = await google_auth.verify(body.credential)
+    except google_auth.GoogleError:
+        raise api_error(400, "google_failed", "구글 로그인에 실패했어요. 다시 시도해 주세요.")
+    new_device, status = STORE.link_account("g:" + sub, name, device)
+    return {"device_id": new_device, "nickname": name, "created": status == "created", "switched": new_device != device}
+
+
 @app.get("/api/config")
 def get_config():
     mode = payments.payments_mode()
@@ -559,7 +578,10 @@ def get_config():
         "costs": {"unlock": UNLOCK_COST, "advice": ADVICE_COST, "followup": FOLLOWUP_COST},
         "followup_max": FOLLOWUP_MAX,
         "followup_free": FOLLOWUP_FREE,
-        "auth": {"kakao": {"enabled": kakao_auth.enabled(), "client_id": kakao_auth.rest_api_key()}},
+        "auth": {
+            "kakao": {"enabled": kakao_auth.enabled(), "client_id": kakao_auth.rest_api_key()},
+            "google": {"enabled": google_auth.enabled(), "client_id": google_auth.client_id()},
+        },
         "play": {
             "enabled": PLAY_ENABLED,
             "plays_per_day": PLAY_PLAYS_PER_DAY,

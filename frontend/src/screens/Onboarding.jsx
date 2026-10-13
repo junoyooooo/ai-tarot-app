@@ -25,7 +25,7 @@ function Dots({ step }) {
 }
 
 export default function Onboarding({ onDone }) {
-  const [step, setStep] = useState(0);
+  const [step, setStep] = useState(1); // 0번 화면은 Welcome 타이틀이 대신해요
   const [form, setForm] = useState({ name: '', birthdate: '' });
   const [error, setError] = useState('');
 

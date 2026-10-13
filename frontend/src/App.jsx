@@ -9,14 +9,31 @@ import History from './screens/History';
 import Profile from './screens/Profile';
 import Help from './screens/Help';
 import Play from './screens/Play';
+import Welcome from './screens/Welcome';
 import { getProfile, saveProfile, getHistory } from './lib/storage';
-import { pendingKakaoCallback, finishKakaoLogin, clearCallbackFromUrl } from './lib/auth';
+import { getAccount, pendingKakaoCallback, finishKakaoLogin, clearCallbackFromUrl } from './lib/auth';
 
 export default function App() {
   const wallet = useWallet();
   const [profile, setProfile] = useState(() => getProfile());
   const [history, setHistory] = useState(() => getHistory());
   const [tab, setTab] = useState('home');
+  // 처음 열면 타이틀(로그인) 화면을 한 번 보여 줘요. 시작하기를 누르거나 로그인하면 다시 안 나와요.
+  const [welcomed, setWelcomed] = useState(() => {
+    try {
+      return !!window.localStorage.getItem('tarot.v1.welcomed') || !!getAccount();
+    } catch {
+      return false;
+    }
+  });
+  const finishWelcome = () => {
+    try {
+      window.localStorage.setItem('tarot.v1.welcomed', '1');
+    } catch {
+      /* 무시 */
+    }
+    setWelcomed(true);
+  };
   const [historyView, setHistoryView] = useState('log'); // 기록 탭 안: 'log' 상담 기록 | 'box' 카드 보관함
   const [seed, setSeed] = useState(null); // 홈에서 분야를 골라 상담으로 넘어올 때 사용
   const [openId, setOpenId] = useState(null); // 기록 상세로 열려 있는 항목
@@ -62,6 +79,14 @@ export default function App() {
             </button>
           )}
         </div>
+      </div>
+    );
+  }
+
+  if (!profile && !welcomed) {
+    return (
+      <div className="app-shell">
+        <Welcome auth={wallet?.config?.auth} onStart={finishWelcome} />
       </div>
     );
   }

@@ -89,3 +89,73 @@ export async function finishKakaoLogin({ code, state, error }) {
   saveAccount({ nickname: data.nickname || '', provider: 'kakao' });
   return data;
 }
+
+let gsiPromise = null;
+function loadGsi() {
+  if (window.google?.accounts?.id) return Promise.resolve();
+  if (!gsiPromise) {
+    gsiPromise = new Promise((resolve, reject) => {
+      const el = document.createElement('script');
+      el.src = 'https://accounts.google.com/gsi/client';
+      el.async = true;
+      el.onload = resolve;
+      el.onerror = () => {
+        gsiPromise = null;
+        reject(new Error('gsi'));
+      };
+      document.head.appendChild(el);
+    });
+  }
+  return gsiPromise;
+}
+
+/** 구글 로그인 버튼을 container 안에 그려요. 로그인하면 onDone(data), 실패하면 onError(message). */
+export async function mountGoogleButton(container, clientId, { onDone, onError, width = 280 }) {
+  try {
+    await loadGsi();
+  } catch {
+    onError?.('구글 로그인을 불러오지 못했어요. 잠시 뒤에 다시 시도해 주세요.');
+    return;
+  }
+  window.google.accounts.id.initialize({
+    client_id: clientId,
+    callback: async ({ credential }) => {
+      try {
+        onDone(await finishGoogleLogin(credential));
+      } catch (e) {
+        onError?.(e.message || '로그인에 실패했어요. 다시 시도해 주세요.');
+      }
+    },
+  });
+  container.innerHTML = '';
+  window.google.accounts.id.renderButton(container, {
+    type: 'standard',
+    theme: 'outline',
+    size: 'large',
+    shape: 'pill',
+    text: 'continue_with',
+    locale: 'ko',
+    width: Math.max(200, Math.min(400, width)),
+  });
+}
+
+async function finishGoogleLogin(credential) {
+  const res = await fetch(`${API_BASE}/api/auth/google`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...deviceHeaders() },
+    body: JSON.stringify({ credential }),
+  });
+  let data = null;
+  try {
+    data = await res.json();
+  } catch {
+    /* 본문 없음 */
+  }
+  if (!res.ok) {
+    const d = data?.detail;
+    throw new ApiError(res.status, d?.code, d?.message || '로그인에 실패했어요. 다시 시도해 주세요.');
+  }
+  setDeviceId(data.device_id);
+  saveAccount({ nickname: data.nickname || '', provider: 'google' });
+  return data;
+}

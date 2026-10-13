@@ -57,3 +57,9 @@ VITE_BIZ_NAME, VITE_BIZ_REP, VITE_BIZ_REG_NO, VITE_BIZ_ECOMM_NO, VITE_BIZ_ADDRES
 ## 카드 보관함 (계급·월간 스티커)
 - 상담이 끝나면 공유 카드가 자동으로 기기의 보관함에 담겨요(기록을 지워도 남음). 계급과 스티커는 서버에 저장된 상담 수로 세서 앱을 조작해도 늘릴 수 없고, 보상은 한 번씩만 받아요.
 - 보상표는 `backend/cardbox.py`(계급: 1·5·10·20·40장, 월간 스티커: 3장·8장, 별가루 보너스 포함)에서 바꿔요. 별가루 보너스는 `PLAY_ENABLED`일 때만 지급돼요.
+
+
+## 구글 로그인
+- 구글 클라우드 콘솔 → API 및 서비스 → 사용자 인증 정보 → OAuth 클라이언트 ID(웹 애플리케이션) 만들기.
+- 승인된 자바스크립트 원본에 `https://ai-tarot-app-tau.vercel.app` (테스트용 `http://localhost:5173`) 추가. 리디렉션 URI는 필요 없어요.
+- Render 환경변수 `GOOGLE_CLIENT_ID` 에 클라이언트 ID(공개값)를 넣으면 로그인 버튼이 켜져요. 클라이언트 보안 비밀은 쓰지 않아요.

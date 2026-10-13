@@ -3,16 +3,161 @@
 @tailwind utilities;
 
 @layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
   body {
-    font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    background-color: #D8B4E2;
-    color: #1f2937;
+    font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background-color: #07070f;
+    color: #e6e7f2;
     margin: 0;
     padding: 0;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 }
 
-/* 3D 원근감 극대화 */
+/* ==========================================================================
+   밤하늘 배경 (별 + 은은한 오로라 빛)
+   ========================================================================== */
+@layer components {
+  .starfield {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background:
+      radial-gradient(ellipse 80% 50% at 50% -10%, rgba(124, 92, 230, 0.34), transparent 70%),
+      radial-gradient(ellipse 60% 40% at 92% 100%, rgba(224, 185, 90, 0.1), transparent 70%),
+      radial-gradient(ellipse 50% 40% at 0% 72%, rgba(80, 60, 180, 0.18), transparent 70%),
+      #07070f;
+  }
+
+  .starfield::before,
+  .starfield::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-repeat: repeat;
+  }
+
+  .starfield::before {
+    background-image:
+      radial-gradient(1px 1px at 20px 30px, rgba(255, 255, 255, 0.7), transparent),
+      radial-gradient(1px 1px at 90px 120px, rgba(255, 255, 255, 0.5), transparent),
+      radial-gradient(1.5px 1.5px at 160px 60px, rgba(236, 210, 139, 0.75), transparent),
+      radial-gradient(1px 1px at 210px 180px, rgba(255, 255, 255, 0.6), transparent),
+      radial-gradient(1px 1px at 60px 210px, rgba(255, 255, 255, 0.4), transparent);
+    background-size: 240px 240px;
+    opacity: 0.8;
+  }
+
+  .starfield::after {
+    background-image:
+      radial-gradient(1.5px 1.5px at 50px 70px, rgba(255, 255, 255, 0.9), transparent),
+      radial-gradient(1px 1px at 180px 140px, rgba(236, 210, 139, 0.9), transparent),
+      radial-gradient(1.5px 1.5px at 270px 250px, rgba(255, 255, 255, 0.8), transparent),
+      radial-gradient(1px 1px at 120px 290px, rgba(255, 255, 255, 0.7), transparent);
+    background-size: 330px 330px;
+    animation: twinkle 6s ease-in-out infinite alternate;
+  }
+
+  /* 유리 질감 카드 */
+  .glass {
+    background: rgba(20, 18, 44, 0.58);
+    border: 1px solid rgba(236, 210, 139, 0.14);
+    -webkit-backdrop-filter: blur(14px);
+    backdrop-filter: blur(14px);
+    box-shadow:
+      0 24px 60px -24px rgba(0, 0, 0, 0.7),
+      inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  }
+
+  .gold-text {
+    background-image: linear-gradient(180deg, #f9eab9 0%, #e0b95a 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+  }
+
+  .btn-gold {
+    background-image: linear-gradient(180deg, #f4dc9b 0%, #d9ad55 100%);
+    color: #1a1305;
+    font-weight: 700;
+    box-shadow:
+      0 10px 30px -10px rgba(224, 185, 90, 0.55),
+      inset 0 1px 0 rgba(255, 255, 255, 0.45);
+    transition: filter 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
+  }
+  .btn-gold:hover {
+    filter: brightness(1.06);
+    box-shadow:
+      0 14px 36px -10px rgba(224, 185, 90, 0.7),
+      inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  }
+  .btn-gold:active {
+    transform: scale(0.985);
+  }
+  .btn-gold:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+
+  .btn-ghost {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(236, 210, 139, 0.28);
+    color: #f1e6c4;
+    transition: background 0.2s ease, border-color 0.2s ease, transform 0.15s ease;
+  }
+  .btn-ghost:hover {
+    background: rgba(236, 210, 139, 0.1);
+    border-color: rgba(236, 210, 139, 0.5);
+  }
+  .btn-ghost:active {
+    transform: scale(0.985);
+  }
+  .btn-ghost:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .field {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 1rem;
+    padding: 0.9rem 1rem;
+    font-size: 0.95rem;
+    color: #f3f4fb;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+  }
+  .field::placeholder {
+    color: rgba(203, 207, 230, 0.42);
+  }
+  .field:focus {
+    outline: none;
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(236, 210, 139, 0.7);
+    box-shadow: 0 0 0 3px rgba(236, 210, 139, 0.14);
+  }
+
+  /* 로딩 링 */
+  .loader-ring {
+    width: 64px;
+    height: 64px;
+    border-radius: 9999px;
+    background: conic-gradient(from 0deg, rgba(236, 210, 139, 0), rgba(236, 210, 139, 0.95));
+    -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2px));
+    mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2px));
+    animation: spin 1.4s linear infinite;
+  }
+}
+
+/* ==========================================================================
+   타로 카드 3D 플립
+   ========================================================================== */
 .perspective-1200 {
   perspective: 1200px;
 }
@@ -26,42 +171,59 @@
   -webkit-backface-visibility: hidden;
 }
 
-/* 극적인 회전 및 팝업 효과 */
 .card-3d-inner {
-  transition: transform 0.85s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.6s ease;
+  transition: transform 0.9s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.6s ease;
   transform-origin: center center;
 }
 
 .card-3d-inner.flipped {
-  transform: rotateY(180deg) translateZ(20px);
+  transform: rotateY(180deg);
 }
 
 .rotate-y-180 {
   transform: rotateY(180deg);
 }
 
-/* 뒤집힐 때 신비로운 빛 번짐 애니메이션 */
+/* 뒤집히기 전 카드가 살짝 떠 있는 느낌 */
+.card-float {
+  animation: floaty 5s ease-in-out infinite;
+}
+
+/* 뒤집힐 때 금빛이 번지는 효과 */
 @keyframes mysticBurst {
   0% {
-    box-shadow: 0 0 0 0 rgba(168, 85, 247, 0.7);
+    box-shadow: 0 0 0 0 rgba(224, 185, 90, 0.6);
   }
-  50% {
-    box-shadow: 0 0 35px 12px rgba(245, 158, 11, 0.45);
+  55% {
+    box-shadow: 0 0 36px 10px rgba(224, 185, 90, 0.35);
   }
   100% {
-    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 12px 30px -8px rgba(0, 0, 0, 0.6);
   }
 }
 
 .burst-glow {
-  animation: mysticBurst 1.2s ease-out;
+  animation: mysticBurst 1.3s ease-out;
 }
 
-/* 부드러운 페이드인 애니메이션 */
+@keyframes floaty {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+@keyframes twinkle {
+  from { opacity: 0.25; }
+  to { opacity: 0.95; }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
 @keyframes softFadeIn {
   from {
     opacity: 0;
-    transform: translateY(20px);
+    transform: translateY(18px);
   }
   to {
     opacity: 1;
@@ -70,5 +232,19 @@
 }
 
 .animate-fade-in-up {
-  animation: softFadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: softFadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* 움직임을 줄이는 설정을 쓰는 사용자 배려 */
+@media (prefers-reduced-motion: reduce) {
+  .starfield::after,
+  .card-float,
+  .loader-ring,
+  .burst-glow,
+  .animate-fade-in-up {
+    animation: none !important;
+  }
+  .card-3d-inner {
+    transition-duration: 0.01s;
+  }
 }

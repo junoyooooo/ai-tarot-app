@@ -5,7 +5,7 @@ export const TAROT_CARDS = [
     arcana: "Major",
     meaning: "새로운 시작, 순수함, 모험, 무한한 가능성과 자유로운 여정",
     image_symbol: "✨",
-    image_url: "/tarot/1_A-modern-tarot-card-of-The-Fool-바보-featuring-a-car.jpeg"
+    image_url: "/tarot/card_0.webp"
   },
   {
     id: 1,
@@ -13,7 +13,7 @@ export const TAROT_CARDS = [
     arcana: "Major",
     meaning: "창조력, 잠재력 실현, 자신감, 모든 자원을 갖춘 시작",
     image_symbol: "🪄",
-    image_url: "/tarot/2_A-modern-tarot-card-of-The-Magician-마법사-featuring-.jpeg"
+    image_url: "/tarot/card_1.webp"
   },
   {
     id: 2,
@@ -21,7 +21,7 @@ export const TAROT_CARDS = [
     arcana: "Major",
     meaning: "직관, 무의식, 비밀, 내면의 깊은 지혜와 통찰",
     image_symbol: "🌙",
-    image_url: "/tarot/3_A-modern-tarot-card-of-The-High-Priestess-여사제-feat.jpeg"
+    image_url: "/tarot/card_2.webp"
   },
   {
     id: 3,
@@ -29,7 +29,7 @@ export const TAROT_CARDS = [
     arcana: "Major",
     meaning: "풍요, 모성, 자연의 결실, 창의적 번영과 따뜻한 포용",
     image_symbol: "👑",
-    image_url: "/tarot/4_A-modern-tarot-card-of-The-Empress-여황제-featuring-a.jpeg"
+    image_url: "/tarot/card_3.webp"
   },
   {
     id: 4,
@@ -37,7 +37,7 @@ export const TAROT_CARDS = [
     arcana: "Major",
     meaning: "권위, 안정, 규율, 확고한 기반과 리더십",
     image_symbol: "🏛️",
-    image_url: "/tarot/5_A-modern-tarot-card-of-The-Emperor-황제-featuring-a-.jpeg"
+    image_url: "/tarot/card_4.webp"
   },
   {
     id: 5,
@@ -45,7 +45,7 @@ export const TAROT_CARDS = [
     arcana: "Major",
     meaning: "전통, 가르침, 신념, 영적 인도와 도덕적 지침",
     image_symbol: "📜",
-    image_url: "/tarot/6_A-modern-tarot-card-of-The-Hierophant-교황-featuring.jpeg"
+    image_url: "/tarot/card_5.webp"
   },
   {
     id: 6,
@@ -53,7 +53,7 @@ export const TAROT_CARDS = [
     arcana: "Major",
     meaning: "사랑, 조화, 선택, 가치관의 일치와 깊은 유대",
     image_symbol: "❤️",
-    image_url: "/tarot/7_A-modern-tarot-card-of-The-Lovers-연인-featuring-a-t.jpeg"
+    image_url: "/tarot/card_6.webp"
   },
   {
     id: 7,
@@ -61,7 +61,7 @@ export const TAROT_CARDS = [
     arcana: "Major",
     meaning: "승리, 의지력, 전진, 난관 극복과 결단력 있는 통제",
     image_symbol: "🛡️",
-    image_url: "/tarot/8_A-modern-tarot-card-of-The-Chariot-전차-featuring-a-.jpeg"
+    image_url: "/tarot/card_7.webp"
   },
   {
     id: 8,
@@ -69,7 +69,7 @@ export const TAROT_CARDS = [
     arcana: "Major",
     meaning: "용기, 인내, 부드러운 힘, 내면의 조절과 자비로운 극복",
     image_symbol: "🦁",
-    image_url: "/tarot/9_A-modern-tarot-card-of-Strength-힘-featuring-a-gent.jpeg"
+    image_url: "/tarot/card_8.webp"
   },
   {
     id: 9,
@@ -77,7 +77,7 @@ export const TAROT_CARDS = [
     arcana: "Major",
     meaning: "성찰, 탐구, 내면의 빛, 고독 속에서 찾는 진실",
     image_symbol: "🏮",
-    image_url: "/tarot/10_A-modern-tarot-card-of-The-Hermit-은둔자-featuring-a-.jpeg"
+    image_url: "/tarot/card_9.webp"
   },
   {
     id: 10,
@@ -85,7 +85,7 @@ export const TAROT_CARDS = [
     arcana: "Major",
     meaning: "전환점, 운명, 피할 수 없는 변화, 행운과 인생의 순환",
     image_symbol: "🎡",
-    image_url: "/tarot/11_A-modern-tarot-card-of-Wheel-of-Fortune-운명의-수레바퀴-f.jpeg"
+    image_url: "/tarot/card_10.webp"
   },
   {
     id: 11,
@@ -93,7 +93,7 @@ export const TAROT_CARDS = [
     arcana: "Major",
     meaning: "공정함, 진실, 균형, 원인과 결과에 따른 정당한 판단",
     image_symbol: "⚖️",
-    image_url: "/tarot/12_A-modern-tarot-card-of-Justice-정의-featuring-a-shar.jpeg"
+    image_url: "/tarot/card_11.webp"
   },
   {
     id: 12,
@@ -101,7 +101,7 @@ export const TAROT_CARDS = [
     arcana: "Major",
     meaning: "새로운 관점, 멈춤, 희생, 수용을 통한 깊은 깨달음",
     image_symbol: "🙃",
-    image_url: "/tarot/13_A-modern-tarot-card-of-The-Hanged-Man-매달린-사람-featu.jpeg"
+    image_url: "/tarot/card_12.webp"
   },
   {
     id: 13,
@@ -109,7 +109,7 @@ export const TAROT_CARDS = [
     arcana: "Major",
     meaning: "끝과 시작, 변혁, 묵은 것의 탈피, 필연적인 재생",
     image_symbol: "🦋",
-    image_url: "/tarot/14_A-modern-tarot-card-of-Death-죽음-featuring-a-goth-s.jpeg"
+    image_url: "/tarot/card_13.webp"
   },
   {
     id: 14,
@@ -117,7 +117,7 @@ export const TAROT_CARDS = [
     arcana: "Major",
     meaning: "조화, 균형, 중용, 서두르지 않는 인내와 치유",
     image_symbol: "🕊️",
-    image_url: "/tarot/15_A-modern-tarot-card-of-Temperance-절제-featuring-a-c.jpeg"
+    image_url: "/tarot/card_14.webp"
   },
   {
     id: 15,
@@ -125,7 +125,7 @@ export const TAROT_CARDS = [
     arcana: "Major",
     meaning: "유혹, 집착, 구속, 물질적 얽매임과 내면의 그림자 마주하기",
     image_symbol: "⛓️",
-    image_url: "/tarot/16_A-modern-tarot-card-of-The-Devil-악마-featuring-a-ti.jpeg"
+    image_url: "/tarot/card_15.webp"
   },
   {
     id: 16,
@@ -133,7 +133,7 @@ export const TAROT_CARDS = [
     arcana: "Major",
     meaning: "갑작스러운 변화, 붕괴, 환상의 파괴, 새로운 토대를 위한 각성",
     image_symbol: "⚡",
-    image_url: "/tarot/17_A-modern-tarot-card-of-The-Tower-탑-featuring-a-per.jpeg"
+    image_url: "/tarot/card_16.webp"
   },
   {
     id: 17,
@@ -141,7 +141,7 @@ export const TAROT_CARDS = [
     arcana: "Major",
     meaning: "희망, 영감, 치유, 어둠 속에서 빛나는 미래의 길잡이",
     image_symbol: "⭐",
-    image_url: "/tarot/18_A-modern-tarot-card-of-The-Star-별-featuring-a-drea.jpeg"
+    image_url: "/tarot/card_17.webp"
   },
   {
     id: 18,
@@ -149,7 +149,7 @@ export const TAROT_CARDS = [
     arcana: "Major",
     meaning: "불안, 환상, 직관, 무의식의 안개 속을 걷는 여정",
     image_symbol: "🌊",
-    image_url: "/tarot/19_A-modern-tarot-card-of-The-Moon-달-featuring-a-pers.jpeg"
+    image_url: "/tarot/card_18.webp"
   },
   {
     id: 19,
@@ -157,7 +157,7 @@ export const TAROT_CARDS = [
     arcana: "Major",
     meaning: "성공, 활력, 명확성, 기쁨과 긍정적인 에너지의 만개",
     image_symbol: "☀️",
-    image_url: "/tarot/20_A-modern-tarot-card-of-The-Sun-태양-featuring-a-joyf.jpeg"
+    image_url: "/tarot/card_19.webp"
   },
   {
     id: 20,
@@ -165,7 +165,7 @@ export const TAROT_CARDS = [
     arcana: "Major",
     meaning: "부활, 결단, 소명, 과거의 청산과 새로운 차원으로의 부름",
     image_symbol: "🎺",
-    image_url: "/tarot/21_A-modern-tarot-card-of-Judgement-심판-featuring-a-pe.jpeg"
+    image_url: "/tarot/card_20.webp"
   },
   {
     id: 21,
@@ -173,48 +173,266 @@ export const TAROT_CARDS = [
     arcana: "Major",
     meaning: "완성, 성취, 통합, 여행의 대단원과 더 넓은 세계로의 도약",
     image_symbol: "🌍",
-    image_url: "/tarot/22_A-modern-tarot-card-of-The-World-세계-featuring-a-su.jpeg"
+    image_url: "/tarot/card_21.webp"
   }
 ];
 
+/* ==========================================================================
+   카드 이름 / 뽑기 유틸
+   ========================================================================== */
+
+// "Justice (정의)" -> "정의"
+export function getKoName(card) {
+  const m = /\(([^)]+)\)/.exec(card?.name || '');
+  return m ? m[1] : card?.name || '';
+}
+
+// 이름 끝에 '님'을 붙여 입력한 경우('민수님')에 '민수님님'이 되지 않도록 정리
+export function cleanName(name) {
+  const n = (name || '').trim().replace(/님$/, '').trim();
+  return n || '내담자';
+}
+
+// Fisher–Yates 셔플 (sort(() => Math.random() - 0.5) 방식은 한쪽으로 치우쳐서 교체)
 export function pickThreeCards() {
-  const shuffled = [...TAROT_CARDS].sort(() => 0.5 - Math.random());
-  const selected = shuffled.slice(0, 3);
-  const positions = ["과거", "현재", "미래"];
-  return selected.map((c, i) => ({
-    ...c,
-    position: positions[i]
-  }));
+  const deck = [...TAROT_CARDS];
+  for (let i = deck.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [deck[i], deck[j]] = [deck[j], deck[i]];
+  }
+  const positions = ['과거', '현재', '미래'];
+  return deck.slice(0, 3).map((c, i) => ({ ...c, position: positions[i] }));
+}
+
+/* ==========================================================================
+   서버가 응답하지 않을 때 쓰는 자체 해석 엔진 (카드별 문장 + 고민 분야별 마무리)
+   - 카드 id(0~21) 순서대로 [과거, 현재, 미래] 문장. {n} 은 이름으로 바뀝니다.
+   ========================================================================== */
+const CARD_TEXTS = {
+  0: [
+    '지난 시간 동안 {n}님은 계산보다 마음이 이끄는 쪽으로 먼저 발을 내디뎌 온 사람이에요. 서툴렀어도 그 첫걸음이 지금 자리까지 데려왔어요.',
+    "지금은 뭐가 정답인지 몰라서 망설여지는 때예요. 바보 카드는 '다 알고 나서 시작하는 사람은 없다'고 말해요. 완벽한 준비보다 가벼운 한 걸음이 더 필요해 보여요.",
+    '앞으로는 예상하지 못한 방향에서 새로운 기회가 불쑥 나타날 수 있어요. 겁먹기보다 호기심을 앞세우면 길이 의외로 넓어질 거예요.',
+  ],
+  1: [
+    '{n}님은 이미 필요한 재료를 꽤 많이 갖추고 있었어요. 다만 스스로는 그 능력을 다 쓰고 있다고 느끼지 못했을 수 있어요.',
+    '지금 손에 쥔 것들, 경험이나 사람, 아이디어를 한 번 펼쳐 놓고 보세요. 부족한 게 아니라 아직 연결하지 않은 것일 가능성이 커요.',
+    "하나씩 연결해 가다 보면 '내가 만들어 가고 있다'는 감각이 선명해질 거예요. 시작은 작게, 그러나 직접 해 보는 쪽이 좋아요.",
+  ],
+  2: [
+    '겉으로 드러내지 않고 속으로 많이 헤아리며 지내온 시간이었어요. 말하지 못한 감정이 쌓여 있었을 수도 있고요.',
+    '지금 답은 바깥보다 안쪽에 있어요. 주변의 조언을 잠시 내려놓고, 처음 떠오른 직감이 뭐였는지 조용히 되짚어 보세요.',
+    '서두르지 않으면 숨어 있던 사실이나 마음이 자연스럽게 드러날 거예요. 지금은 판단을 미루고 지켜보는 시간이 득이 돼요.',
+  ],
+  3: [
+    '누군가를 돌보거나 무언가를 키우는 데 마음을 많이 써 온 시간이었어요. 그 정성은 사라지지 않고 어딘가에 쌓여 있어요.',
+    '지금은 몰아붙이기보다 나를 먼저 챙겨야 할 때예요. 충분히 쉬고 먹고 웃는 일이 고민을 푸는 데도 의외로 큰 힘이 돼요.',
+    '공들인 것들이 서서히 열매로 돌아오는 흐름이에요. 조급해하지 않으면 풍성함이 눈에 보이는 순간이 올 거예요.',
+  ],
+  4: [
+    '책임감으로 버텨 온 시간이 길었어요. 흔들리지 않으려고 스스로를 단단히 세워 온 모습이 보여요.',
+    '지금은 감정보다 구조가 필요한 때예요. 해야 할 일의 우선순위를 정하고 기준을 세우면 마음도 한결 안정돼요.',
+    '원칙과 계획이 기반이 되어 안정적인 자리를 만들어 줄 거예요. 다만 너무 완고해지지 않도록 유연함도 한 스푼 섞어 두세요.',
+  ],
+  5: [
+    '정해진 방식이나 믿어 온 조언을 따라 걸어온 시간이었어요. 그 길에서 배운 것들이 지금의 기준이 됐어요.',
+    "지금은 믿을 만한 사람이나 경험 있는 조언자에게 물어보면 도움이 돼요. 다만 '다들 그렇게 하니까'가 아니라 내 가치관에 맞는지도 같이 따져 보세요.",
+    '배움이나 멘토, 공식적인 절차를 통해 길이 정리될 수 있어요. 기본을 차분히 밟는 게 결국 가장 빠른 길이에요.',
+  ],
+  6: [
+    '중요한 선택 앞에서 마음이 갈렸던 적이 있었어요. 그때 무엇을 택했느냐가 지금의 관계와 가치관에 영향을 주고 있어요.',
+    "지금의 핵심은 '뭐가 더 이득이냐'보다 '뭐가 나다운가'예요. 남의 기대가 아니라 내 마음이 진짜 원하는 쪽을 솔직하게 적어 보세요.",
+    '마음이 맞는 사람이나 선택과 더 깊이 이어지는 흐름이에요. 선택에는 책임이 따르지만, 그만큼 후회가 적은 선택이 될 수 있어요.',
+  ],
+  7: [
+    '목표를 향해 앞만 보고 달려온 시간이었어요. 그만큼 이뤄낸 것도, 놓친 것도 있었을 거예요.',
+    '상반된 마음이 서로 다른 방향으로 잡아당기고 있어요. 속도를 높이기 전에 고삐부터 쥐고 방향을 하나로 정리해 보세요.',
+    '방향만 정하면 추진력이 붙어 막혀 있던 일이 앞으로 나아가요. 의지와 집중이 결과로 이어지는 흐름이에요.',
+  ],
+  8: [
+    '겉으로는 담담했지만 속으로 꽤 오래 참고 견뎌 온 시간이었어요. 그 인내가 지금의 단단함이 됐어요.',
+    '이 상황은 세게 밀어붙이는 힘보다 부드럽게 다독이는 힘이 통해요. 불안한 마음도 억누르기보다 쓰다듬듯 달래 주세요.',
+    '조급함을 다스린 만큼 상황이 스스로 풀리는 걸 보게 될 거예요. 용기는 큰소리가 아니라 포기하지 않는 태도에서 나와요.',
+  ],
+  9: [
+    '혼자 생각하고 정리하느라 사람들과 거리를 둔 시간이 있었어요. 외로웠지만 그때 나만의 기준이 만들어졌어요.',
+    '지금은 바쁘게 움직이기보다 잠깐 멈춰 생각을 정리할 때예요. 하루 20~30분이라도 아무 방해 없이 내 마음을 들여다보는 시간이 필요해요.',
+    '조용히 찾은 답이 방향을 비춰 줄 거예요. 서두르지 않아도 길은 보여요. 필요한 만큼의 혼자만의 시간은 허락해 주세요.',
+  ],
+  10: [
+    '예상하지 못한 흐름의 변화를 한 번 겪었던 시간이었어요. 그때는 힘들었어도 결국 지금의 자리로 이어졌어요.',
+    '지금은 상황이 바뀌는 길목에 서 있어요. 내가 통제할 수 있는 것과 없는 것을 구분하면 마음이 훨씬 가벼워져요.',
+    '흐름이 곧 위쪽으로 돌아설 가능성이 보여요. 기회가 왔을 때 바로 잡을 수 있도록 작은 준비만 해 두세요.',
+  ],
+  11: [
+    '옳고 그름을 따져 보며 스스로 기준을 세워 온 시간이었어요. 억울했던 일이 있었다면 그 감정에도 이유가 있었어요.',
+    '지금은 감정이 아니라 사실을 기준으로 정리해 볼 때예요. 장단점을 종이에 적고 나란히 놓고 보면 판단이 선명해져요.',
+    '공정한 결과로 균형이 맞춰지는 흐름이에요. 지금 한 선택이 그대로 돌아오는 시기라, 정직하게 택한 만큼 마음이 편해질 거예요.',
+  ],
+  12: [
+    '하고 싶어도 멈춰 서야 했던 시간이 있었어요. 답답했지만 그 사이에 보이지 않던 것들을 보게 됐어요.',
+    '지금은 억지로 움직여도 잘 풀리지 않는 구간이에요. 관점을 하나만 바꿔 보세요. 정말 잃는 건 뭐고 얻는 건 뭔지요.',
+    '기다림 끝에 새로운 시각이 열려요. 포기가 아니라 잠시 내려놓는 쪽이 더 좋은 결과로 이어질 수 있어요.',
+  ],
+  13: [
+    '무언가를 끝내거나 떠나보내야 했던 경험이 있었어요. 아팠던 만큼 그 자리에서 새로 자란 것도 있어요.',
+    '지금은 끝맺어야 할 것을 붙잡고 있지는 않은지 돌아볼 때예요. 놓는 일은 실패가 아니라 다음 장으로 넘어가는 절차예요.',
+    '묵은 것이 정리되면서 새로운 국면이 시작돼요. 이 카드는 문자 그대로의 끝이 아니라 큰 전환을 뜻해서, 너무 겁먹지 않아도 괜찮아요.',
+  ],
+  14: [
+    '무리하지 않으려고 균형을 맞추며 지내 온 시간이었어요. 때론 답답했지만 그 습관이 지금의 안정감을 만들었어요.',
+    '지금은 한쪽으로 쏠린 것을 조금씩 맞춰 가는 게 좋아요. 일과 쉼, 나와 타인, 돈과 시간의 비율을 가볍게 점검해 보세요.',
+    '서두르지 않고 맞춰 간 만큼 회복과 조화가 찾아와요. 천천히 가는 게 결국 가장 멀리 가는 방법이에요.',
+  ],
+  15: [
+    '벗어나고 싶은데 쉽게 끊기지 않는 습관, 관계, 걱정에 묶여 있던 시간이 있었어요. 의지가 약해서가 아니라 그만큼 얽힌 게 많았어요.',
+    '지금 나를 붙잡고 있는 게 뭔지 이름을 붙여 보세요. 사슬이 느슨하게 걸려 있다는 걸 알아차리는 순간부터 벗어날 길이 열려요.',
+    '내가 쥔 줄을 스스로 풀 수 있다는 걸 확인하게 돼요. 한 가지만 먼저 느슨하게 만들어도 흐름이 달라져요.',
+  ],
+  16: [
+    '믿고 있던 것이 갑자기 무너지거나 크게 흔들린 경험이 있었어요. 충격이 컸지만 덕분에 가짜와 진짜가 가려졌어요.',
+    '지금은 흔들림이 크게 느껴지는 때일 수 있어요. 하지만 무너지는 건 부실했던 부분이고, 정말 중요한 건 남아 있어요.',
+    '당장은 어수선해도 새 토대를 세울 기회가 와요. 무너진 자리에 다시 쌓을 때는 더 튼튼하게 만들 수 있어요.',
+  ],
+  17: [
+    '힘든 시간 속에서도 작은 희망을 놓지 않았던 시간이었어요. 그 빛이 꺼지지 않았기에 여기까지 왔어요.',
+    '지금은 회복이 천천히 시작되는 단계예요. 아직 확신이 서지 않아도, 마음이 조금씩 가라앉고 있다면 제대로 가고 있는 거예요.',
+    '막막했던 상황 속에서 길잡이가 되어 줄 계기가 찾아와요. 희망을 갖는 것이 현실적으로도 좋은 선택이 되는 흐름이에요.',
+  ],
+  18: [
+    '불안과 막연한 걱정 속에서 마음이 자주 흔들렸던 시간이었어요. 확실하지 않은 것들 때문에 잠 못 든 밤도 있었을 거예요.',
+    "지금은 사실과 상상이 뒤섞여 보이는 구간이에요. 걱정을 '확인된 것'과 '아직 모르는 것'으로 나눠 적어 보세요. 대부분 후자일 거예요.",
+    '안개가 걷히면서 가려져 있던 것들이 서서히 보이기 시작해요. 직감을 믿되, 큰 결정은 확인한 뒤에 하는 게 안전해요.',
+  ],
+  19: [
+    '분명 환하게 웃던 시기가 있었어요. 그때 느꼈던 에너지는 지금도 꺼내 쓸 수 있는 자산이에요.',
+    '겉으로 보기보다 상황은 생각보다 괜찮은 쪽에 가까워요. 걱정을 잠시 내려놓고 내가 이미 잘하고 있는 일을 먼저 떠올려 보세요.',
+    '분명하고 밝은 결과로 이어질 가능성이 커요. 기쁜 일은 숨기지 말고 주변과 나눠 보세요. 에너지가 더 커질 거예요.',
+  ],
+  20: [
+    '지난 선택과 일들을 돌아보며 곱씹게 되는 시간이 있었어요. 후회가 남았다면 그만큼 진지하게 살아왔다는 뜻이에요.',
+    "지금은 마음속에서 '이제는 결정해야 한다'는 목소리가 커진 때예요. 과거를 정리하고 새 출발을 선언할 타이밍이 가까워졌어요.",
+    '스스로 내린 결단으로 새로운 장이 열려요. 부름에 응답하는 용기가 필요하지만, 그만큼 보람도 커요.',
+  ],
+  21: [
+    '한 가지 과정을 끝까지 해낸 경험이 있었어요. 그 완주의 감각이 지금도 큰 자산이에요.',
+    '지금은 마무리와 다음 단계 사이에 서 있어요. 이미 이룬 것을 인정해 주고, 다음 무대를 어디로 할지 가볍게 그려 보세요.',
+    '한 챕터가 멋지게 마무리되고 더 넓은 세계로 나아가요. 지금까지의 노력이 인정받는 흐름이에요.',
+  ],
+};
+
+const CATEGORIES = [
+  {
+    key: 'work',
+    test: /직장|회사|이직|퇴사|취업|면접|진로|커리어|업무|상사|사업|창업|프로젝트|일이|알바|승진/,
+    opener: "일 앞에서의 고민은 정답 찾기보다 '내가 지키고 싶은 기준' 찾기에 가까울 때가 많아요. 카드를 같이 펼쳐 볼게요.",
+    action: "이번 주 안에 '지금 일에서 지키고 싶은 것'과 '바꾸고 싶은 것'을 각각 세 줄로 적어 보세요.",
+    summaries: ['흔들려도 내 길은 내가 정하는 거예요', '선택의 끝에는 나다운 일이 기다려요'],
+    hashtags: ['#커리어고민', '#나다운선택', '#작은한걸음', '#오늘의타로'],
+  },
+  {
+    key: 'love',
+    test: /연애|사랑|남자친구|여자친구|남친|여친|썸|이별|헤어|결혼|짝사랑|애인|재회|소개팅|좋아하는/,
+    opener: '마음이 걸린 일은 머리로 풀리지 않을 때가 많죠. 카드가 비춰 주는 이야기부터 같이 들어 볼게요.',
+    action: '마음에 걸리는 말이나 감정을 보내지 않을 편지로 먼저 적어 보세요. 쓰다 보면 내가 원하는 게 보여요.',
+    summaries: ['마음이 가는 쪽엔 늘 이유가 있어요', '서툴러도 진심은 닿아요'],
+    hashtags: ['#마음의방향', '#연애타로', '#솔직한마음', '#오늘의카드'],
+  },
+  {
+    key: 'money',
+    test: /돈|재물|투자|주식|코인|빚|대출|월급|부동산|집값|수입|적금|금전|지출/,
+    opener: '돈 문제는 마음을 가장 조급하게 만들어요. 불안을 조금 가라앉히면서 카드를 같이 펼쳐 볼게요. 투자나 큰 결정은 카드만 믿지 말고 전문가와도 꼭 상의해 보세요.',
+    action: '이번 달 들어오는 돈과 나가는 돈을 한 장에 적어 보고, 줄일 수 있는 항목 하나만 정해 보세요.',
+    summaries: ['차근히 쌓은 만큼 단단해져요', '불안은 숫자로 적을수록 작아져요'],
+    hashtags: ['#금전운', '#차근차근', '#현실타로', '#오늘의카드'],
+  },
+  {
+    key: 'study',
+    test: /시험|공부|학교|입시|수능|자격증|합격|성적|대학|논문|과제/,
+    opener: '준비하는 시간은 길고 결과는 멀게 느껴지죠. 지금까지의 노력을 떠올리며 카드를 펼쳐 볼게요.',
+    action: '오늘 공부할 분량을 평소의 절반으로 줄여서라도 일단 시작해 보세요. 시작한 날은 이어 가기가 쉬워요.',
+    summaries: ['오늘의 한 페이지가 내일의 나를 만들어요', '쉬어 가도 여전히 가고 있는 거예요'],
+    hashtags: ['#공부타로', '#한걸음씩', '#응원해', '#오늘의카드'],
+  },
+  {
+    key: 'relation',
+    test: /친구|가족|부모|동료|인간관계|갈등|싸움|오해|이웃|엄마|아빠|형|언니|동생|관계/,
+    opener: '사람 사이의 일은 내 마음대로 되지 않아서 더 지치죠. 카드가 어떤 이야기를 건네는지 들어 볼게요.',
+    action: "하고 싶은 말을 '나는 ~해서 ~했어요' 한 문장으로 먼저 정리해 보세요. 비난 없이 전하기가 쉬워져요.",
+    summaries: ['진심은 말로 닿아요, 천천히 전해 봐요', '서운함은 말해야 풀려요'],
+    hashtags: ['#관계타로', '#솔직한대화', '#마음챙김', '#오늘의카드'],
+  },
+  {
+    key: 'default',
+    test: /$^/,
+    opener: '혼자 품고 있기엔 꽤 무거운 이야기 같아요. 카드가 어떤 이야기를 건네는지 같이 들어 볼게요.',
+    action: '오늘 잠들기 전에 지금 가장 마음에 걸리는 걸 한 문장으로 적고, 그 옆에 내일 할 수 있는 가장 작은 행동 하나를 적어 보세요.',
+    summaries: ['답은 이미 마음 어딘가에 있어요', '오늘은 나를 다독이는 날이에요'],
+    hashtags: ['#오늘의타로', '#마음의소리', '#작은위로', '#나를위한시간'],
+  },
+];
+
+const CRISIS_PATTERN = /죽고\s*싶|자살|극단적\s*(인\s*)?선택|목숨을|사라지고\s*싶|살기\s*싫|살고\s*싶지/;
+
+function detectCategory(concern) {
+  return CATEGORIES.find((c) => c.test.test(concern)) || CATEGORIES[CATEGORIES.length - 1];
+}
+
+// 사용자가 입력한 글이 마크다운 문법으로 해석되지 않도록 이스케이프
+function mdEscape(text) {
+  return String(text).replace(/\s+/g, ' ').trim().replace(/([\\`*_{}[\]<>#+!|~])/g, '\\$1');
+}
+
+function truncate(text, max) {
+  const chars = Array.from(text);
+  return chars.length > max ? `${chars.slice(0, max).join('')}…` : text;
 }
 
 export function generateLocalReading(name, birthdate, concern, cards) {
+  const userName = mdEscape(cleanName(name));
+  const concernText = (concern || '').trim();
+
+  // 위기 신호가 보이면 타로 풀이 대신 안내 메시지를 보여 줍니다.
+  if (CRISIS_PATTERN.test(concernText)) {
+    return {
+      cards,
+      reading: `${userName}님, 적어 주신 마음이 많이 무겁게 느껴져서 카드를 펼치기 전에 이 말부터 드리고 싶어요.
+
+지금 많이 힘드시다는 게 글에서 전해져요. 그 마음을 혼자 버텨 낼 필요는 없어요. 가까운 사람에게 지금의 마음을 한마디라도 꺼내 보시고, 당장 너무 힘들다면 **자살예방 상담전화 109**(24시간)에 전화해 보세요. 위급한 상황이라면 112나 119도 바로 도움을 줄 수 있어요.
+
+타로는 위로를 건네는 도구일 뿐, 지금 필요한 건 사람의 목소리일 수 있어요. 이 글을 읽는 지금도 ${userName}님은 충분히 소중한 사람이에요.`,
+      one_line_summary: '오늘은 혼자 버티지 않아도 괜찮아요',
+      hashtags: ['#혼자가아니에요', '#오늘의위로'],
+    };
+  }
+
+  const cat = detectCategory(concernText);
   const [past, present, future] = cards;
-  const userName = name || '내담자';
+  const fill = (id, idx) => (CARD_TEXTS[id]?.[idx] || '').replaceAll('{n}', userName);
+  const quote = mdEscape(truncate(concernText.replace(/\s+/g, ' '), 70));
 
-  const reading = `안녕하세요, **${userName}님**. 오늘 품고 오신 깊은 고민( *"${concern}"* )에 귀 기울이며 별빛의 메시지를 열었습니다.
+  const reading = `${userName}님, 안녕하세요. 적어 주신 이야기를 천천히 읽어 봤어요.
 
-### 🕰️ [과거] ${past.name}이/가 말하는 것
-지나온 시간 속에서 ${userName}님은 **${past.meaning}**의 시기를 온몸으로 관통해 오셨습니다. 쉽게 놓을 수 없었던 많은 생각과 고민들이 있었지만, 그 모든 순간은 헛된 것이 아니라 오늘 이 자리에 단단하게 서기 위한 필연적인 밑거름이었습니다.
+> “${quote}”
 
-### 👁️ [현재] ${present.name}이/가 주는 경고
-지금 ${userName}님의 현재 자리에 놓인 카드는 **${present.meaning}**의 에너지를 강하게 내뿜고 있습니다. 현재 느끼시는 불안이나 망설임은 당연한 반응입니다. 지금 가장 중요한 것은 외부의 시선이나 조급한 마음에 휩쓸리지 않고, ${userName}님 본연의 중심을 지키며 현실을 차분하게 직시하는 것입니다.
+${cat.opener}
 
-### 🔮 [미래] ${future.name}이/가 이끄는 길
-앞으로 다가올 운명의 나침반은 **${future.meaning}**의 눈부신 방향을 가리키고 있습니다. 지금의 안개를 지나면 생각보다 훨씬 더 명확하고 따뜻한 해결의 실마리가 풀려나갈 것입니다. 두려워하지 마세요. 운명은 이미 ${userName}님의 편에서 걸어가고 있습니다.
+### 🕰️ [과거] ${getKoName(past)} 카드가 비추는 지난 시간
+${fill(past.id, 0)}
 
-### 💡 타로 마스터의 종합 조언
-${userName}님, 너무 모든 짐을 혼자 짊어지려 하지 마세요. **작은 한 걸음부터 용기 내어 실천해 보는 것**, 그것이 운명의 문을 여는 가장 확실한 열쇠입니다. 당신의 내일은 오늘보다 훨씬 더 눈부실 것을 확신합니다. 진심으로 응원합니다.`;
+### 👁️ [현재] ${getKoName(present)} 카드가 짚어주는 지금
+${fill(present.id, 1)}
 
-  const summaries = [
-    `가장 깊은 어둠을 지나 곧 찬란한 빛을 마주할 ${userName}님의 운명`,
-    `불안을 넘어 자신만의 눈부신 계절을 맞이할 ${userName}님`,
-    `흔들림 속에서도 결국 자신만의 길을 찾아낼 ${userName}님의 여정`
-  ];
+### 🔮 [미래] ${getKoName(future)} 카드가 여는 앞으로의 길
+${fill(future.id, 2)}
+
+### 💡 마스터의 한마디
+**${cat.action}** 정답을 서둘러 찾지 않아도 괜찮아요. 카드는 방향을 비춰 줄 뿐이고, 걸어가는 건 ${userName}님이에요. 오늘 하루도 수고 많으셨어요.`;
 
   return {
     cards,
     reading,
-    one_line_summary: summaries[Math.floor(Math.random() * summaries.length)],
-    hashtags: ["#운명의신탁", "#결국해낼사람", "#내면의빛", "#타로조언"]
+    one_line_summary: cat.summaries[Math.floor(Math.random() * cat.summaries.length)],
+    hashtags: cat.hashtags,
   };
 }

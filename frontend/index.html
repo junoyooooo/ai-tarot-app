@@ -3,13 +3,20 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔮</text></svg>" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#07070f" />
+    <meta name="description" content="세 장의 카드가 지금 마음에 걸린 고민에 대해 이야기해 주는 AI 타로 리딩" />
+    <meta property="og:title" content="운명의 AI 타로" />
+    <meta property="og:description" content="세 장의 카드가 지금 마음에 걸린 고민에 대해 이야기해 줘요." />
+    <meta property="og:type" content="website" />
     <title>AI 타로 마스터 - 운명의 조언</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Pretendard:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <!-- Pretendard는 Google Fonts에 없어서(잘못된 family는 요청 전체가 실패함) 별도 CDN으로 분리 -->
+    <link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" />
   </head>
-  <body class="bg-[#0b0c16] text-slate-100 min-h-screen selection:bg-purple-600 selection:text-white">
+  <body class="min-h-screen selection:bg-gold-400 selection:text-night-950">
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>

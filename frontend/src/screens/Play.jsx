@@ -91,6 +91,8 @@ export default function Play({ onBack }) {
   const anchor = ANCHORS[mainId] || ANCHORS[0];
   const blocked = { hat: anchor.noHat, glasses: anchor.noGlasses, shoes: anchor.noShoes };
   const catalog = data.catalog;
+  // 안 산 아이템도 눌러 보면 미리 입어 볼 수 있어요 (이미 쓰고 있는 부위는 제외)
+  const previewOutfit = pending && catalog[pending] && !blocked[slot] ? { ...data.equipped, [slot]: pending } : data.equipped;
   const slotItems = Object.entries(catalog).filter(([, v]) => v.slot === slot);
   const mainCard = TAROT_CARDS.find((c) => c.id === mainId);
   const discovered = TAROT_CARDS.filter((c) => col[c.id] || c.id === mainId);
@@ -119,7 +121,7 @@ export default function Play({ onBack }) {
       {/* 내 마스코트 */}
       <div className="mt-4 rounded-[28px] bg-gradient-to-br from-[#ece4ff] to-[#d6e7ff] pt-10 pb-5 flex flex-col items-center">
         <div className="h-[190px] flex items-end">
-          <Avatar id={mainId} outfit={data.equipped} className="h-[170px] max-w-[260px]" bounce />
+          <Avatar id={mainId} outfit={previewOutfit} className="h-[170px] max-w-[260px]" bounce />
         </div>
         <p className="mt-3 text-[17px] font-extrabold text-ink">{mainCard ? getKoName(mainCard) : '운명이'}</p>
         <p className="text-[12px] text-mute">나의 대표 운명이</p>
@@ -198,8 +200,9 @@ export default function Play({ onBack }) {
       {pending && catalog[pending] && (
         <div className="mt-3 rounded-2xl bg-white border border-brand-100 shadow-soft px-4 py-3 flex items-center justify-between gap-3">
           <p className="text-[13.5px] text-ink break-keep">
-            <b>{catalog[pending].name}</b>을(를) 별가루 {catalog[pending].price}개로 살까요?
+            {blocked[slot] ? '' : '👀 입어 보는 중! '}<b>{catalog[pending].name}</b>을(를) 별가루 {catalog[pending].price}개로 살까요?
           </p>
+          <button type="button" onClick={() => setPending(null)} className="shrink-0 text-[12px] font-bold text-mute cursor-pointer">취소</button>
           <button
             type="button"
             disabled={busy || data.stardust < catalog[pending].price}

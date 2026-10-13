@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import TabBar from './components/TabBar';
+import ShopSheet from './components/ShopSheet';
+import { useWallet } from './hooks/useWallet';
 import Onboarding from './screens/Onboarding';
 import Home from './screens/Home';
 import Consult from './screens/Consult';
@@ -8,6 +10,7 @@ import Profile from './screens/Profile';
 import { getProfile, saveProfile, getHistory } from './lib/storage';
 
 export default function App() {
+  const wallet = useWallet();
   const [profile, setProfile] = useState(() => getProfile());
   const [history, setHistory] = useState(() => getHistory());
   const [tab, setTab] = useState('home');
@@ -80,6 +83,12 @@ export default function App() {
       </main>
 
       <TabBar active={tab} onChange={goTab} />
+      <ShopSheet />
+      {wallet?.toast && (
+        <div role="status" className="fixed left-1/2 -translate-x-1/2 bottom-28 z-[60] max-w-[390px] w-[calc(100%-40px)] rounded-2xl bg-ink text-white text-[14px] font-semibold px-4 py-3 text-center shadow-card break-keep">
+          {wallet.toast}
+        </div>
+      )}
     </div>
   );
 }

@@ -27,7 +27,7 @@ const md = {
   li: ({ node, ...props }) => <li className="leading-relaxed text-[15px]" {...props} />,
 };
 
-const HEADING_RE = /^\s*(?:\S+\s+)?\[(과거|현재|미래)\]\s*(.*)$/;
+const HEADING_RE = /^\s*(?:\S+\s+)?\[([^\]]+)\]\s*(.*)$/;
 
 function parseSections(text) {
   const parts = text.split(/^### /m);
@@ -43,7 +43,7 @@ function parseSections(text) {
   return { intro: intro.trim(), sections };
 }
 
-export default function ReadingView({ reading, isComplete, cards = [] }) {
+export default function ReadingView({ reading, isComplete, cards = [], footer = null }) {
   const { intro, sections } = parseSections(reading);
   const lastIdx = sections.length - 1;
 
@@ -76,6 +76,8 @@ export default function ReadingView({ reading, isComplete, cards = [] }) {
           </section>
         );
       })}
+
+      {footer}
 
       {sections.length === 0 && !intro && <div className="py-12 text-center text-mute text-sm">답변을 준비하고 있어요…</div>}
     </div>

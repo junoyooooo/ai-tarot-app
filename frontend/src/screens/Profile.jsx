@@ -1,5 +1,8 @@
 import React, { useState } from 'react';
 import Mascot from '../components/Mascot';
+import Collection from '../components/Collection';
+import CoinChip from '../components/CoinChip';
+import { useWallet } from '../hooks/useWallet';
 import { saveProfile, validateBirthdate, clearAll } from '../lib/storage';
 import { cleanName } from '../tarotData';
 
@@ -8,6 +11,7 @@ export default function Profile({ profile, historyCount, onProfileChange, onClea
   const [error, setError] = useState('');
   const [saved, setSaved] = useState(false);
   const [confirmClear, setConfirmClear] = useState(false);
+  const wallet = useWallet();
 
   const dirty = form.name.trim() !== profile.name || form.birthdate !== profile.birthdate;
 
@@ -36,7 +40,19 @@ export default function Profile({ profile, historyCount, onProfileChange, onClea
         <p className="mt-0.5 text-[13px] text-mute">지금까지 {historyCount}번 상담했어요</p>
       </div>
 
-      <form onSubmit={submit} noValidate className="mt-6 space-y-4">
+      {wallet?.enabled && (
+        <div className="mt-4 flex items-center justify-between rounded-[22px] bg-gold-200/40 px-5 py-3.5">
+          <div>
+            <p className="text-[13px] font-bold text-[#7a5a14]">보유 코인</p>
+            <p className="text-[12px] text-mute">풀이 열기·조언 카드·더 물어보기에 써요</p>
+          </div>
+          <CoinChip />
+        </div>
+      )}
+
+      <Collection />
+
+      <form onSubmit={submit} noValidate className="mt-8 space-y-4">
         <div>
           <label htmlFor="pf-name" className="block text-[13px] font-semibold text-ink mb-1.5 pl-1">
             이름 (또는 별명)
@@ -83,7 +99,7 @@ export default function Profile({ profile, historyCount, onProfileChange, onClea
       <div className="mt-8 rounded-[24px] bg-brand-50 px-5 py-4">
         <p className="text-[14px] font-bold text-ink">데이터 안내</p>
         <p className="mt-1.5 text-[13px] leading-relaxed text-mute break-keep">
-          프로필과 상담 기록은 이 기기의 브라우저에만 저장돼요. 리딩을 만들 때 이름, 생년월일, 고민 내용이 AI 서버로 전달돼요. 브라우저 데이터를 지우면 기록도 사라져요.
+          프로필과 상담 기록은 이 기기의 브라우저에만 저장돼요. 리딩을 만들 때 이름, 생년월일, 고민 내용이 AI 서버로 전달돼요. 브라우저 데이터를 지우면 기록도 사라져요.{wallet?.enabled ? ' 코인은 ‘내 데이터 모두 삭제’를 눌러도 지워지지 않아요.' : ''}
         </p>
       </div>
 

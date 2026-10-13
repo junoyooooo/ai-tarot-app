@@ -4,9 +4,12 @@ import Mascot from '../components/Mascot';
 import CardFlip from '../components/CardFlip';
 import ReadingView from '../components/ReadingView';
 import ShareActions from '../components/ShareActions';
+import LockedSection from '../components/LockedSection';
+import ReadingExtras from '../components/ReadingExtras';
 import useReading from '../hooks/useReading';
 import { CATEGORIES, categoryByKey } from '../lib/categories';
-import { addHistory } from '../lib/storage';
+import { addHistory, updateHistory } from '../lib/storage';
+import { recordCards } from '../lib/collection';
 import { getKoName, cleanName } from '../tarotData';
 
 const MAX_CONCERN = 450;
@@ -21,6 +24,9 @@ export default function Consult({ profile, seed, onSaved, onGoHistory }) {
   const [runInfo, setRunInfo] = useState({ concern: '', category: 'etc' });
   const readingRef = useRef(null);
   const savedRef = useRef(false);
+  const entryIdRef = useRef(null);
+  const [advice, setAdvice] = useState(null);
+  const [followups, setFollowups] = useState([]);
   const topRef = useRef(null);
 
   /* 홈에서 분야를 골라 들어오면 그 단계부터 시작 */
@@ -52,8 +58,11 @@ export default function Consult({ profile, seed, onSaved, onGoHistory }) {
   useEffect(() => {
     if (!reading.isComplete || savedRef.current || reading.cards.length !== 3 || !reading.reading) return;
     savedRef.current = true;
+    const entryId = String(Date.now());
+    entryIdRef.current = entryId;
+    recordCards(reading.cards.map((c) => c.id));
     const entry = {
-      id: String(Date.now()),
+      id: entryId,
       ts: Date.now(),
       category: runInfo.category,
       concern: runInfo.concern,
@@ -61,10 +70,24 @@ export default function Consult({ profile, seed, onSaved, onGoHistory }) {
       reading: reading.reading,
       summary: reading.meta.one_line_summary,
       hashtags: reading.meta.hashtags,
+      readingId: reading.readingId,
+      locked: Boolean(reading.locked),
+      lockedTitles: reading.locked?.titles || [],
+      lockedCost: reading.locked?.cost || 1,
     };
     onSaved(addHistory(entry));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reading.isComplete]);
+
+  const persist = (patch) => {
+    if (entryIdRef.current) onSaved(updateHistory(entryIdRef.current, patch));
+  };
+
+  const handleUnlocked = (text) => {
+    const full = `${reading.reading.trimEnd()}\n\n${text}`;
+    reading.applyUnlock(text);
+    persist({ reading: full, locked: false, lockedTitles: [] });
+  };
 
   const name = cleanName(profile.name);
   const cat = categoryByKey(category);
@@ -78,13 +101,17 @@ export default function Consult({ profile, seed, onSaved, onGoHistory }) {
     }
     setError('');
     savedRef.current = false;
+    entryIdRef.current = null;
+    setAdvice(null);
+    setFollowups([]);
     setFlipped([false, false, false]);
     setRunInfo({ concern: text, category: cat.key });
     setStep('run');
     reading.start({
       name: profile.name,
       birthdate: profile.birthdate,
-      concern: `(${cat.label} 고민) ${text}`.slice(0, 500),
+      concern: text.slice(0, 500),
+      category: cat.key,
     });
     topRef.current?.scrollIntoView({ block: 'start' });
   };
@@ -262,7 +289,21 @@ export default function Consult({ profile, seed, onSaved, onGoHistory }) {
             )}
           </div>
 
-          <ReadingView reading={reading.reading} isComplete={reading.isComplete} cards={reading.cards} />
+          <ReadingView
+            reading={reading.reading}
+            isComplete={reading.isComplete}
+            cards={reading.cards}
+            footer={
+              reading.isComplete && reading.locked && reading.readingId ? (
+                <LockedSection
+                  readingId={reading.readingId}
+                  titles={reading.locked.titles}
+                  cost={reading.locked.cost}
+                  onUnlocked={handleUnlocked}
+                />
+              ) : null
+            }
+          />
 
           {reading.isComplete && (
             <div className="mt-5 animate-fade-in-up">
@@ -278,6 +319,23 @@ export default function Consult({ profile, seed, onSaved, onGoHistory }) {
                 </div>
               </div>
 
+              {!reading.locked && (
+                <ReadingExtras
+                  readingId={reading.readingId}
+                  advice={advice}
+                  followups={followups}
+                  onAdvice={(a) => {
+                    setAdvice(a);
+                    persist({ advice: a });
+                  }}
+                  onFollowups={(list) => {
+                    setFollowups(list);
+                    persist({ followups: list });
+                  }}
+                />
+              )}
+
+              <div className="mt-4" />
               <ShareActions name={name} cards={reading.cards} summary={reading.meta.one_line_summary} hashtags={reading.meta.hashtags} />
 
               <div className="grid grid-cols-2 gap-2.5 mt-2.5">

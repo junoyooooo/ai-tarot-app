@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { ChevronRight, Sparkles } from 'lucide-react';
 import Mascot from '../components/Mascot';
 import CardFlip from '../components/CardFlip';
+import CoinChip from '../components/CoinChip';
+import { recordCards } from '../lib/collection';
 import { CATEGORIES, categoryByKey } from '../lib/categories';
 import { getDaily, saveDaily, todayKey } from '../lib/storage';
 import { getDailyCard, getDailyMessage, getKoName, TAROT_CARDS, cleanName } from '../tarotData';
@@ -31,6 +33,7 @@ export default function Home({ profile, history, onStartConsult, onOpenEntry, on
   const draw = () => {
     const next = { date: today, cardId: getDailyCard(profile.name, profile.birthdate, today).id };
     saveDaily(next);
+    recordCards([next.cardId]);
     setDaily(next);
     setFlipped(true);
   };
@@ -39,7 +42,10 @@ export default function Home({ profile, history, onStartConsult, onOpenEntry, on
 
   return (
     <div className="px-5 pt-8 pb-32 animate-fade-in-up">
-      <p className="text-[13px] font-semibold text-mute">{formatDate()}</p>
+      <div className="flex items-center justify-between">
+        <p className="text-[13px] font-semibold text-mute">{formatDate()}</p>
+        <CoinChip />
+      </div>
       <h1 className="mt-1 text-[26px] font-extrabold tracking-tight text-ink leading-tight">
         {name}님, 안녕하세요
       </h1>

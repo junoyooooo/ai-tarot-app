@@ -3,6 +3,9 @@ import { ChevronRight, Sparkles } from 'lucide-react';
 import Mascot from '../components/Mascot';
 import CardFlip from '../components/CardFlip';
 import CoinChip from '../components/CoinChip';
+import Avatar from '../components/Avatar';
+import { useWallet } from '../hooks/useWallet';
+import { useLook } from '../lib/look';
 import { recordCards } from '../lib/collection';
 import { CATEGORIES, categoryByKey } from '../lib/categories';
 import { getDaily, saveDaily, todayKey } from '../lib/storage';
@@ -19,7 +22,9 @@ function formatShort(ts) {
   return `${d.getMonth() + 1}/${d.getDate()}`;
 }
 
-export default function Home({ profile, history, onStartConsult, onOpenEntry, onGoHistory }) {
+export default function Home({ profile, history, onStartConsult, onOpenEntry, onGoHistory, onOpenPlay }) {
+  const wallet = useWallet();
+  const look = useLook();
   const today = todayKey();
   const [daily, setDaily] = useState(() => {
     const saved = getDaily();
@@ -65,6 +70,21 @@ export default function Home({ profile, history, onStartConsult, onOpenEntry, on
         </div>
         <Mascot id={1} className="w-[104px] h-[124px] shrink-0 -mb-2" />
       </button>
+
+      {/* 별똥별 마을 */}
+      {wallet?.config?.play?.enabled && (
+        <button
+          type="button"
+          onClick={onOpenPlay}
+          className="mt-3 w-full rounded-[24px] bg-gradient-to-br from-[#2a2465] to-[#5b3a9a] text-left px-5 py-3.5 flex items-center gap-3 cursor-pointer active:scale-[0.99] transition-transform"
+        >
+          <div className="flex-1 min-w-0">
+            <p className="text-[16px] font-extrabold text-white">별똥별 마을</p>
+            <p className="mt-0.5 text-[12.5px] text-white/75 break-keep">별을 받고 마스코트를 꾸며 보세요</p>
+          </div>
+          <Avatar id={look.main} outfit={look.equipped} className="h-[64px] shrink-0" />
+        </button>
+      )}
 
       {/* 오늘의 카드 */}
       <h2 className="mt-8 mb-3 text-[19px] font-extrabold text-ink">오늘의 카드</h2>

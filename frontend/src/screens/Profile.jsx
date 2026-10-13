@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ChevronRight } from 'lucide-react';
-import Mascot from '../components/Mascot';
+import Avatar from '../components/Avatar';
+import { useLook } from '../lib/look';
 import Collection from '../components/Collection';
 import CoinChip from '../components/CoinChip';
 import { useWallet } from '../hooks/useWallet';
@@ -8,7 +9,8 @@ import { getSettings, setSetting, playSfx } from '../lib/sound';
 import { saveProfile, validateBirthdate, clearAll } from '../lib/storage';
 import { cleanName } from '../tarotData';
 
-export default function Profile({ profile, historyCount, onProfileChange, onCleared, onOpenHelp }) {
+export default function Profile({ profile, historyCount, onProfileChange, onCleared, onOpenHelp, onOpenPlay }) {
+  const look = useLook();
   const [form, setForm] = useState({ name: profile.name, birthdate: profile.birthdate });
   const [error, setError] = useState('');
   const [saved, setSaved] = useState(false);
@@ -41,8 +43,8 @@ export default function Profile({ profile, historyCount, onProfileChange, onClea
       <h1 className="text-[26px] font-extrabold tracking-tight text-ink">내 정보</h1>
 
       <div className="mt-5 flex flex-col items-center rounded-[28px] bg-gradient-to-br from-[#ece4ff] to-[#d6e7ff] py-7">
-        <div className="w-24 h-24 rounded-full bg-white flex items-center justify-center shadow-soft">
-          <Mascot id={0} className="w-16 h-[72px]" />
+        <div className="w-28 h-28 rounded-full bg-white flex items-end justify-center pb-3 shadow-soft">
+          <Avatar id={look.main} outfit={look.equipped} className="h-[78px]" />
         </div>
         <p className="mt-3 text-[20px] font-extrabold text-ink">{cleanName(profile.name)}님</p>
         <p className="mt-0.5 text-[13px] text-mute">지금까지 {historyCount}번 상담했어요</p>
@@ -56,6 +58,20 @@ export default function Profile({ profile, historyCount, onProfileChange, onClea
           </div>
           <CoinChip />
         </div>
+      )}
+
+      {wallet?.config?.play?.enabled && (
+        <button
+          type="button"
+          onClick={onOpenPlay}
+          className="mt-4 w-full flex items-center justify-between rounded-[22px] bg-[#ece4ff] px-5 py-4 text-left cursor-pointer active:scale-[0.99] transition-transform"
+        >
+          <span>
+            <span className="block text-[15px] font-bold text-ink">마스코트 꾸미기</span>
+            <span className="block text-[12px] text-mute">별똥별 받기, 아이템, 대표 마스코트</span>
+          </span>
+          <ChevronRight className="w-5 h-5 text-ink/40" aria-hidden="true" />
+        </button>
       )}
 
       <button

@@ -33,3 +33,16 @@ VITE_BIZ_NAME, VITE_BIZ_REP, VITE_BIZ_REG_NO, VITE_BIZ_ECOMM_NO, VITE_BIZ_ADDRES
 | LIMIT_EXTRA_FREE / LIMIT_EXTRA_PAID | 6 / 20 | 하루 조언 카드+후속 질문 합계 |
 | LIMIT_GLOBAL_READINGS | 3000 | 서비스 전체 하루 상담 수 (비용 안전장치) |
 한도에 걸리면 코인은 차감되지 않고, 생성 실패 시 횟수도 돌려줘요. 이미 한 상담의 잠금 해제와 위기(109) 응답은 한도와 무관해요.
+
+## 별똥별 마을 (미니게임·별가루·꾸미기)
+| 변수 | 기본 | 설명 |
+|---|---|---|
+| PLAY_ENABLED | true | false 면 게임·꾸미기 숨김 |
+| PLAY_PLAYS_PER_DAY | 3 | 하루 판 수 |
+| PLAY_DAILY_STARDUST | 6 | 하루 별가루 상한 (점수와 무관) |
+| PLAY_MIN_SECONDS | 15 | 한 판이 최소 이 시간 이상이어야 정산 |
+| PLAY_EXCHANGE_COST | 30 | 별가루 → 코인 1개 교환 비용 (결제 기능이 켜졌을 때만, 기기당 주 1회) |
+| PLAY_EXCHANGE_PER_IP_WEEKLY | 2 | 같은 네트워크에서 주당 교환 가능 횟수 |
+- 아이템 목록·가격: backend/play.py, 그림: frontend/src/lib/items.jsx (같은 id), 마스코트별 착용 위치: frontend/src/lib/mascotAnchors.js
+- 새 마스코트 그림을 바꾸면 mascotAnchors.js 의 좌표도 다시 맞춰 주세요.
+- 비용: 게임·아이템은 AI 호출이 없어 0원이에요. 코인으로 바뀌는 건 주 1회 상담 1회분(약 8원)이 최대예요.

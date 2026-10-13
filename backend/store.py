@@ -12,6 +12,8 @@ import time
 from contextlib import contextmanager
 from typing import Any, Dict, Optional, Tuple
 
+from play import STARTER as PLAY_STARTER
+
 
 class InsufficientCoins(Exception):
     def __init__(self, coins: int):
@@ -62,6 +64,26 @@ CREATE TABLE IF NOT EXISTS usage (
     kind TEXT NOT NULL,
     n INTEGER NOT NULL DEFAULT 0,
     PRIMARY KEY (device_id, day, kind)
+);
+CREATE TABLE IF NOT EXISTS play_state (
+    device_id TEXT PRIMARY KEY,
+    stardust INTEGER NOT NULL DEFAULT 0,
+    items_json TEXT NOT NULL DEFAULT '[]',
+    equipped_json TEXT NOT NULL DEFAULT '{}',
+    main_mascot INTEGER NOT NULL DEFAULT 0,
+    last_exchange_week TEXT NOT NULL DEFAULT '',
+    created_at REAL NOT NULL
+);
+CREATE TABLE IF NOT EXISTS play_runs (
+    run_id TEXT PRIMARY KEY,
+    device_id TEXT NOT NULL,
+    day TEXT NOT NULL,
+    started_at REAL NOT NULL,
+    claimed INTEGER NOT NULL DEFAULT 0
+);
+CREATE TABLE IF NOT EXISTS exchange_grants (
+    ip_hash TEXT NOT NULL,
+    week TEXT NOT NULL
 );
 CREATE TABLE IF NOT EXISTS orders (
     order_id TEXT PRIMARY KEY,
@@ -306,3 +328,103 @@ class Store:
     def fail_order(self, order_id: str) -> None:
         with self._tx() as c:
             c.execute("UPDATE orders SET status='failed' WHERE order_id=? AND status='pending'", (order_id,))
+
+
+    # ------------------------------------------------------------------ 별가루·꾸미기 (미니게임)
+    @staticmethod
+    def _play_row(c: sqlite3.Connection, device_id: str, starter: Tuple[str, ...] = PLAY_STARTER) -> Dict[str, Any]:
+        row = c.execute("SELECT * FROM play_state WHERE device_id=?", (device_id,)).fetchone()
+        if row is None:
+            c.execute(
+                "INSERT INTO play_state(device_id, items_json, created_at) VALUES (?,?,?)",
+                (device_id, json.dumps(list(starter)), time.time()),
+            )
+            row = c.execute("SELECT * FROM play_state WHERE device_id=?", (device_id,)).fetchone()
+        d = dict(row)
+        d["items"] = json.loads(d.pop("items_json") or "[]")
+        d["equipped"] = json.loads(d.pop("equipped_json") or "{}")
+        return d
+
+    def play_state(self, device_id: str, day: str, starter: Tuple[str, ...] = PLAY_STARTER) -> Dict[str, Any]:
+        with self._tx() as c:
+            d = self._play_row(c, device_id, starter)
+            d["plays_today"] = self._count(c, device_id, day, "play")
+            d["earned_today"] = self._count(c, device_id, day, "stardust")
+            return d
+
+    def play_start(self, device_id: str, day: str, run_id: str, max_plays: int) -> bool:
+        """판을 시작한다. 오늘 끝낸 판이 한도에 닿았으면 False."""
+        with self._tx() as c:
+            if self._count(c, device_id, day, "play") >= max_plays:
+                return False
+            c.execute(
+                "INSERT INTO play_runs(run_id, device_id, day, started_at) VALUES (?,?,?,?)",
+                (run_id, device_id, day, time.time()),
+            )
+            return True
+
+    def play_claim(
+        self, device_id: str, day: str, run_id: str, score: int, min_seconds: float,
+        max_plays: int, daily_cap: int, reward_fn,
+    ) -> Dict[str, Any]:
+        """판을 끝내고 별가루를 받는다. 한 판은 한 번만 정산되고, 하루 별가루는 점수와 상관없이 daily_cap 을 넘지 않는다."""
+        with self._tx() as c:
+            run = c.execute("SELECT * FROM play_runs WHERE run_id=? AND device_id=?", (run_id, device_id)).fetchone()
+            if run is None:
+                return {"error": "unknown_run"}
+            if run["claimed"]:
+                return {"error": "already_claimed"}
+            if time.time() - run["started_at"] < min_seconds:
+                return {"error": "too_fast"}
+            if self._count(c, device_id, day, "play") >= max_plays:
+                return {"error": "play_limit"}
+            c.execute("UPDATE play_runs SET claimed=1 WHERE run_id=?", (run_id,))
+            self._bump(c, device_id, day, "play", 1)
+            earned_before = self._count(c, device_id, day, "stardust")
+            want = int(reward_fn(score))
+            gain = max(0, min(want, daily_cap - earned_before))
+            if gain:
+                self._bump(c, device_id, day, "stardust", gain)
+                self._play_row(c, device_id)
+                c.execute("UPDATE play_state SET stardust = stardust + ? WHERE device_id=?", (gain, device_id))
+            return {"gain": gain, "capped": gain < want}
+
+    def play_buy(self, device_id: str, item_id: str, price: int) -> str:
+        """'ok' | 'owned' | 'poor'"""
+        with self._tx() as c:
+            d = self._play_row(c, device_id)
+            if item_id in d["items"]:
+                return "owned"
+            cur = c.execute(
+                "UPDATE play_state SET stardust = stardust - ? WHERE device_id=? AND stardust >= ?", (price, device_id, price)
+            )
+            if cur.rowcount == 0:
+                return "poor"
+            c.execute("UPDATE play_state SET items_json=? WHERE device_id=?", (json.dumps(d["items"] + [item_id]), device_id))
+            return "ok"
+
+    def play_equip(self, device_id: str, equipped: Dict[str, str], main: Optional[int]) -> None:
+        with self._tx() as c:
+            self._play_row(c, device_id)
+            c.execute("UPDATE play_state SET equipped_json=? WHERE device_id=?", (json.dumps(equipped), device_id))
+            if main is not None:
+                c.execute("UPDATE play_state SET main_mascot=? WHERE device_id=?", (main, device_id))
+
+    def play_exchange(self, device_id: str, ip: str, week: str, cost: int, per_ip_weekly: int) -> str:
+        """별가루 → 코인 1개. 기기당 일주일에 한 번, 같은 네트워크는 일주일에 per_ip_weekly 번까지. 'ok'|'poor'|'weekly'|'ip'"""
+        with self._tx() as c:
+            d = self._play_row(c, device_id)
+            if d["last_exchange_week"] == week:
+                return "weekly"
+            h = self._ip_hash(ip or "unknown")
+            if c.execute("SELECT COUNT(*) FROM exchange_grants WHERE ip_hash=? AND week=?", (h, week)).fetchone()[0] >= per_ip_weekly:
+                return "ip"
+            cur = c.execute(
+                "UPDATE play_state SET stardust = stardust - ?, last_exchange_week=? WHERE device_id=? AND stardust >= ?",
+                (cost, week, device_id, cost),
+            )
+            if cur.rowcount == 0:
+                return "poor"
+            c.execute("INSERT INTO exchange_grants(ip_hash, week) VALUES (?,?)", (h, week))
+            self._grant(c, device_id, 1, "stardust_exchange", week)
+            return "ok"

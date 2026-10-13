@@ -8,6 +8,7 @@ import Consult from './screens/Consult';
 import History from './screens/History';
 import Profile from './screens/Profile';
 import Help from './screens/Help';
+import Play from './screens/Play';
 import { getProfile, saveProfile, getHistory } from './lib/storage';
 
 export default function App() {
@@ -55,6 +56,7 @@ export default function App() {
               window.scrollTo({ top: 0 });
             }}
             onGoHistory={() => goTab('history')}
+            onOpenPlay={() => goTab('play')}
           />
         )}
 
@@ -69,9 +71,12 @@ export default function App() {
 
         {tab === 'help' && <Help onBack={() => goTab('profile')} />}
 
+        {tab === 'play' && <Play onBack={() => goTab('home')} />}
+
         {tab === 'profile' && (
           <Profile
             onOpenHelp={() => goTab('help')}
+            onOpenPlay={() => goTab('play')}
             profile={profile}
             historyCount={history.length}
             onProfileChange={setProfile}
@@ -86,7 +91,7 @@ export default function App() {
         )}
       </main>
 
-      <TabBar active={tab === 'help' ? 'profile' : tab} onChange={goTab} />
+      <TabBar active={tab === 'help' ? 'profile' : tab === 'play' ? 'home' : tab} onChange={goTab} />
       <ShopSheet />
       {wallet?.toast && (
         <div role="status" className="fixed left-1/2 -translate-x-1/2 bottom-28 z-[60] max-w-[390px] w-[calc(100%-40px)] rounded-2xl bg-ink text-white text-[14px] font-semibold px-4 py-3 text-center shadow-card break-keep">

@@ -17,6 +17,7 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
 import payments
+import play
 from spreads import CATEGORY_LABELS, position_labels, spread_for
 from store import InsufficientCoins, OrderError, Store
 
@@ -173,6 +174,14 @@ LIMIT_EXTRA_FREE = _env_int("LIMIT_EXTRA_FREE", 6)
 LIMIT_EXTRA_PAID = _env_int("LIMIT_EXTRA_PAID", 20)
 LIMIT_GLOBAL_READINGS = _env_int("LIMIT_GLOBAL_READINGS", 3000)
 KST = timezone(timedelta(hours=9))
+
+# 별똥별 받기(미니게임)·별가루. 하루 보상 상한과 코인 교환 횟수가 비용을 막아 줍니다.
+PLAY_ENABLED = _env_bool("PLAY_ENABLED", True)
+PLAY_PLAYS_PER_DAY = _env_int("PLAY_PLAYS_PER_DAY", 3)
+PLAY_DAILY_STARDUST = _env_int("PLAY_DAILY_STARDUST", 6)
+PLAY_MIN_SECONDS = _env_int("PLAY_MIN_SECONDS", 15)
+PLAY_EXCHANGE_COST = _env_int("PLAY_EXCHANGE_COST", 30)
+PLAY_EXCHANGE_PER_IP_WEEKLY = _env_int("PLAY_EXCHANGE_PER_IP_WEEKLY", 2)
 
 
 def _make_store() -> Store:
@@ -518,6 +527,13 @@ def get_config():
         "products": payments.PRODUCTS,
         "costs": {"unlock": UNLOCK_COST, "advice": ADVICE_COST, "followup": FOLLOWUP_COST},
         "followup_max": FOLLOWUP_MAX,
+        "play": {
+            "enabled": PLAY_ENABLED,
+            "plays_per_day": PLAY_PLAYS_PER_DAY,
+            "daily_stardust": PLAY_DAILY_STARDUST,
+            "exchange_cost": PLAY_EXCHANGE_COST,
+            "exchange_enabled": PLAY_ENABLED and paywall_enabled(),
+        },
         "limits": {
             "enabled": LIMITS_ENABLED,
             "reading_free": LIMIT_READING_FREE,
@@ -537,6 +553,119 @@ def get_wallet(request: Request):
     did = device_id_from(request, required=True)
     w = STORE.ensure_wallet(did, client_ip(request), WELCOME_COINS, WELCOME_PER_IP_DAILY)
     return _wallet_payload(w)
+
+
+# ---------------------------------------------------------------------------
+# 별똥별 받기 · 별가루 · 꾸미기
+# ---------------------------------------------------------------------------
+def _play_guard(request: Request) -> str:
+    if not PLAY_ENABLED:
+        raise api_error(404, "play_disabled", "지금은 별똥별 받기를 쉬고 있어요.")
+    return device_id_from(request, required=True)
+
+
+def _play_payload(did: str) -> dict:
+    day = today_kst()
+    st = STORE.play_state(did, day, play.STARTER)
+    w = STORE.ensure_wallet(did, "", 0)
+    week = datetime.now(KST).strftime("%G-W%V")
+    return {
+        "stardust": st["stardust"],
+        "items": st["items"],
+        "equipped": {k: v for k, v in st["equipped"].items() if v in st["items"]},
+        "main": st["main_mascot"],
+        "plays_left": max(0, PLAY_PLAYS_PER_DAY - st["plays_today"]),
+        "earned_today": st["earned_today"],
+        "daily_cap": PLAY_DAILY_STARDUST,
+        "exchange_used_this_week": st["last_exchange_week"] == week,
+        "coins": w["coins"],
+        "catalog": {k: {"slot": v["slot"], "name": v["name"], "price": v["price"]} for k, v in play.ITEMS.items()},
+    }
+
+
+@app.get("/api/play/state")
+def play_state(request: Request):
+    return _play_payload(_play_guard(request))
+
+
+@app.post("/api/play/start")
+def play_start(request: Request):
+    did = _play_guard(request)
+    run_id = uuid.uuid4().hex
+    if not STORE.play_start(did, today_kst(), run_id, PLAY_PLAYS_PER_DAY):
+        raise api_error(429, "play_limit", "오늘 별똥별은 모두 받았어요. 내일 또 만나요!")
+    return {"run_id": run_id, "seconds": 20}
+
+
+class PlayClaim(BaseModel):
+    run_id: str = Field(..., min_length=8, max_length=64)
+    score: int = Field(0, ge=0, le=500)
+
+
+@app.post("/api/play/claim")
+def play_claim(body: PlayClaim, request: Request):
+    did = _play_guard(request)
+    res = STORE.play_claim(
+        did, today_kst(), body.run_id, body.score, PLAY_MIN_SECONDS, PLAY_PLAYS_PER_DAY, PLAY_DAILY_STARDUST, play.reward_for
+    )
+    if "error" in res:
+        status = 429 if res["error"] == "play_limit" else 400
+        raise api_error(status, res["error"], "이 판은 정산할 수 없어요.")
+    return {"gain": res["gain"], "capped": res["capped"], **_play_payload(did)}
+
+
+class PlayBuy(BaseModel):
+    item_id: str = Field(..., max_length=40)
+
+
+@app.post("/api/play/buy")
+def play_buy(body: PlayBuy, request: Request):
+    did = _play_guard(request)
+    item = play.ITEMS.get(body.item_id)
+    if not item:
+        raise api_error(400, "unknown_item", "없는 아이템이에요.")
+    r = STORE.play_buy(did, body.item_id, item["price"])
+    if r == "poor":
+        raise api_error(402, "not_enough_stardust", "별가루가 조금 모자라요.")
+    return _play_payload(did)
+
+
+class PlayEquip(BaseModel):
+    equipped: Dict[str, Optional[str]] = Field(default_factory=dict)
+    main: Optional[int] = Field(None, ge=0, le=21)
+
+
+@app.post("/api/play/equip")
+def play_equip(body: PlayEquip, request: Request):
+    did = _play_guard(request)
+    st = STORE.play_state(did, today_kst(), play.STARTER)
+    clean: Dict[str, str] = {}
+    for slot, item_id in body.equipped.items():
+        if slot not in play.SLOTS or not item_id:
+            continue
+        item = play.ITEMS.get(item_id)
+        if not item or item["slot"] != slot or item_id not in st["items"]:
+            raise api_error(400, "not_owned", "가지고 있지 않은 아이템이에요.")
+        clean[slot] = item_id
+    STORE.play_equip(did, clean, body.main)
+    return _play_payload(did)
+
+
+@app.post("/api/play/exchange")
+def play_exchange(request: Request):
+    did = _play_guard(request)
+    if not paywall_enabled():
+        raise api_error(400, "exchange_unavailable", "지금은 코인 교환을 열지 않았어요.")
+    STORE.ensure_wallet(did, client_ip(request), 0)
+    week = datetime.now(KST).strftime("%G-W%V")
+    r = STORE.play_exchange(did, client_ip(request), week, PLAY_EXCHANGE_COST, PLAY_EXCHANGE_PER_IP_WEEKLY)
+    if r == "poor":
+        raise api_error(402, "not_enough_stardust", f"별가루 {PLAY_EXCHANGE_COST}개가 필요해요.")
+    if r == "weekly":
+        raise api_error(429, "exchange_weekly", "코인 교환은 일주일에 한 번만 할 수 있어요.")
+    if r == "ip":
+        raise api_error(429, "exchange_ip", "지금은 교환을 이용할 수 없어요. 나중에 다시 시도해 주세요.")
+    return _play_payload(did)
 
 
 @app.post("/api/tarot/reading/stream")

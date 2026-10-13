@@ -52,3 +52,11 @@ export const prepareCheckout = (sku) => request('/api/checkout/prepare', { metho
 export const sandboxConfirm = (order_id) => request('/api/checkout/sandbox-confirm', { method: 'POST', body: { order_id } });
 export const tossConfirm = (paymentKey, orderId, amount) =>
   request('/api/checkout/confirm', { method: 'POST', body: { paymentKey, orderId, amount }, timeoutMs: 60000 });
+
+// 별똥별 받기 · 별가루 · 꾸미기
+export const fetchPlay = () => request('/api/play/state', { timeoutMs: 20000 });
+export const playStart = () => request('/api/play/start', { method: 'POST', timeoutMs: 20000 });
+export const playClaim = (run_id, score) => request('/api/play/claim', { method: 'POST', body: { run_id, score }, timeoutMs: 20000 });
+export const playBuy = (item_id) => request('/api/play/buy', { method: 'POST', body: { item_id } });
+export const playEquip = (equipped, main) => request('/api/play/equip', { method: 'POST', body: { equipped, main } });
+export const playExchange = () => request('/api/play/exchange', { method: 'POST' });

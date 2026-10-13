@@ -23,3 +23,13 @@
 ## 사업자 정보 (Vercel 환경변수, 도움말 > 사업자 정보에 표시)
 VITE_BIZ_NAME, VITE_BIZ_REP, VITE_BIZ_REG_NO, VITE_BIZ_ECOMM_NO, VITE_BIZ_ADDRESS, VITE_BIZ_EMAIL, VITE_BIZ_PHONE
 비워 두면 '준비 중'으로 보여요. 이용약관·환불 규정(frontend/src/screens/Help.jsx)은 초안이니 결제를 열기 전에 꼭 검토해 주세요.
+
+## 하루 이용 한도 (Render 환경변수, 한국시간 자정 초기화)
+| 변수 | 기본 | 설명 |
+|---|---|---|
+| LIMITS_ENABLED | true | false 면 한도 전체 해제 |
+| LIMIT_READING_FREE | 3 | 코인을 쓴 적 없는 기기의 하루 상담 수 |
+| LIMIT_READING_PAID | 10 | 코인을 충전한 적 있는 기기의 하루 상담 수 |
+| LIMIT_EXTRA_FREE / LIMIT_EXTRA_PAID | 6 / 20 | 하루 조언 카드+후속 질문 합계 |
+| LIMIT_GLOBAL_READINGS | 3000 | 서비스 전체 하루 상담 수 (비용 안전장치) |
+한도에 걸리면 코인은 차감되지 않고, 생성 실패 시 횟수도 돌려줘요. 이미 한 상담의 잠금 해제와 위기(109) 응답은 한도와 무관해요.

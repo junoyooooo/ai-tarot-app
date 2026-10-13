@@ -56,6 +56,13 @@ CREATE TABLE IF NOT EXISTS readings (
     followups_json TEXT NOT NULL DEFAULT '[]',
     created_at REAL NOT NULL
 );
+CREATE TABLE IF NOT EXISTS usage (
+    device_id TEXT NOT NULL,
+    day TEXT NOT NULL,
+    kind TEXT NOT NULL,
+    n INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (device_id, day, kind)
+);
 CREATE TABLE IF NOT EXISTS orders (
     order_id TEXT PRIMARY KEY,
     device_id TEXT NOT NULL,
@@ -101,6 +108,48 @@ class Store:
                 raise
             finally:
                 conn.close()
+
+    # ------------------------------------------------------------------ 하루 이용 한도
+    GLOBAL_ID = "*"
+
+    def has_paid(self, device_id: str) -> bool:
+        with self._tx() as c:
+            return c.execute("SELECT 1 FROM orders WHERE device_id=? AND status='paid' LIMIT 1", (device_id,)).fetchone() is not None
+
+    @staticmethod
+    def _count(c: sqlite3.Connection, device_id: str, day: str, kind: str) -> int:
+        row = c.execute("SELECT n FROM usage WHERE device_id=? AND day=? AND kind=?", (device_id, day, kind)).fetchone()
+        return row["n"] if row else 0
+
+    @staticmethod
+    def _bump(c: sqlite3.Connection, device_id: str, day: str, kind: str, delta: int) -> None:
+        c.execute(
+            "INSERT INTO usage(device_id, day, kind, n) VALUES (?,?,?,?) "
+            "ON CONFLICT(device_id, day, kind) DO UPDATE SET n = MAX(0, n + ?)",
+            (device_id, day, kind, max(0, delta), delta),
+        )
+
+    def try_use(self, device_id: str, day: str, kind: str, device_limit: int = 0, global_limit: int = 0) -> Optional[str]:
+        """하루 한도를 확인하고 한 번 쓴 것으로 센다. 통과하면 None, 막히면 'global' 또는 'device'.
+        limit 이 0 이하이면 그 단계는 제한하지 않는다. 확인과 증가가 한 트랜잭션이라 동시에 몰려도 한도를 넘지 않는다."""
+        with self._tx() as c:
+            if global_limit > 0 and self._count(c, self.GLOBAL_ID, day, kind) >= global_limit:
+                return "global"
+            if device_limit > 0 and self._count(c, device_id, day, kind) >= device_limit:
+                return "device"
+            if device_limit > 0:
+                self._bump(c, device_id, day, kind, 1)
+            if global_limit > 0:
+                self._bump(c, self.GLOBAL_ID, day, kind, 1)
+            return None
+
+    def release_use(self, device_id: str, day: str, kind: str, device: bool = True, glob: bool = False) -> None:
+        """생성에 실패했을 때 센 횟수를 돌려준다."""
+        with self._tx() as c:
+            if device:
+                self._bump(c, device_id, day, kind, -1)
+            if glob:
+                self._bump(c, self.GLOBAL_ID, day, kind, -1)
 
     # ------------------------------------------------------------------ 지갑
     @staticmethod

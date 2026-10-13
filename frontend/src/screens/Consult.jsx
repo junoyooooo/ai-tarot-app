@@ -225,6 +225,27 @@ export default function Consult({ profile, seed, onSaved, onGoHistory }) {
     );
   }
 
+  /* ---------------------------- 하루 이용 한도 안내 ---------------------------- */
+  if (step !== 'category' && step !== 'write' && reading.limit) {
+    return (
+      <div ref={topRef} className="min-h-[80dvh] px-8 flex flex-col items-center justify-center text-center animate-fade-in-up" role="status">
+        <Mascot id={cat.mascot} className="w-24 h-28" />
+        <h1 className="mt-5 text-[20px] font-extrabold text-ink break-keep">
+          {reading.limit.scope === 'global' ? '오늘은 상담이 마감됐어요' : '오늘 상담을 모두 마쳤어요'}
+        </h1>
+        <p className="mt-2 text-[14px] leading-relaxed text-mute break-keep">{reading.limit.message}</p>
+        <div className="mt-6 grid grid-cols-2 gap-2.5 w-full max-w-[320px]">
+          <button type="button" onClick={onGoHistory} className="btn-soft py-3.5 rounded-2xl text-[14px] cursor-pointer">
+            기록 보기
+          </button>
+          <button type="button" onClick={restart} className="btn-primary py-3.5 rounded-2xl text-[14px] cursor-pointer">
+            돌아가기
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   /* ---------------------------- 3. 카드 고르기 ---------------------------- */
   if (step === 'pick') {
     return (

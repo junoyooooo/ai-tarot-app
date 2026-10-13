@@ -7,6 +7,7 @@ import re
 import time
 import uuid
 from collections import defaultdict, deque
+from datetime import datetime, timedelta, timezone
 from typing import AsyncGenerator, Deque, Dict, List, Optional, Tuple
 
 from dotenv import load_dotenv
@@ -162,6 +163,17 @@ WELCOME_COINS = _env_int("WELCOME_COINS", 1)
 WELCOME_PER_IP_DAILY = _env_int("WELCOME_PER_IP_DAILY", 3)
 GEMINI_MODEL_PREMIUM = os.getenv("GEMINI_MODEL_PREMIUM", "") or GEMINI_MODEL
 
+# 하루 이용 한도 (한국 시간 자정에 초기화). 무료·유료 모두 적용되는 비용·남용 방지 장치입니다.
+#  - 상담(reading): 기기별 + 서비스 전체 / 조언 카드·더 물어보기(extra): 기기별 (코인 결제 이력이 있으면 더 넉넉하게)
+#  - 한도 때문에 막힐 때는 코인을 차감하지 않고, 이미 만든 상담의 풀이 열기는 막지 않습니다.
+LIMITS_ENABLED = _env_bool("LIMITS_ENABLED", True)
+LIMIT_READING_FREE = _env_int("LIMIT_READING_FREE", 3)
+LIMIT_READING_PAID = _env_int("LIMIT_READING_PAID", 10)
+LIMIT_EXTRA_FREE = _env_int("LIMIT_EXTRA_FREE", 6)
+LIMIT_EXTRA_PAID = _env_int("LIMIT_EXTRA_PAID", 20)
+LIMIT_GLOBAL_READINGS = _env_int("LIMIT_GLOBAL_READINGS", 3000)
+KST = timezone(timedelta(hours=9))
+
 
 def _make_store() -> Store:
     path = os.getenv("DB_PATH") or os.path.join(os.path.dirname(__file__), "data", "tarot.db")
@@ -174,6 +186,39 @@ def _make_store() -> Store:
 
 
 STORE = _make_store()
+
+def today_kst() -> str:
+    return datetime.now(KST).strftime("%Y-%m-%d")
+
+
+def use_quota(device: str, kind: str) -> Optional[str]:
+    """하루 한도를 한 번 쓴다. 쓴 날짜를 돌려주고(실패 시 되돌릴 때 사용), 한도에 닿으면 429 를 낸다."""
+    if not LIMITS_ENABLED:
+        return None
+    day = today_kst()
+    named = device != "anonymous"
+    paid = named and STORE.has_paid(device)
+    if kind == "reading":
+        dev_limit = (LIMIT_READING_PAID if paid else LIMIT_READING_FREE) if named else 0
+        glob_limit = LIMIT_GLOBAL_READINGS
+    else:
+        dev_limit = (LIMIT_EXTRA_PAID if paid else LIMIT_EXTRA_FREE) if named else 0
+        glob_limit = 0
+    blocked = STORE.try_use(device, day, kind, dev_limit, glob_limit)
+    if blocked == "global":
+        raise api_error(429, "daily_limit", "오늘은 이용자가 많아 새 상담이 일찍 마감됐어요. 내일 다시 만나요. (코인은 차감되지 않았어요)", scope="global")
+    if blocked == "device":
+        what = "상담" if kind == "reading" else "조언 카드와 더 물어보기"
+        raise api_error(429, "daily_limit", f"오늘 이용할 수 있는 {what} 횟수를 모두 썼어요. 한국 시간 자정이 지나면 다시 이용할 수 있어요. (코인은 차감되지 않았어요)", scope="device")
+    return day
+
+
+def release_quota(device: str, kind: str, day: Optional[str]) -> None:
+    if not LIMITS_ENABLED or not day:
+        return
+    named = device != "anonymous"
+    STORE.release_use(device, day, kind, device=named, glob=(kind == "reading"))
+
 
 DEVICE_RE = re.compile(r"^[A-Za-z0-9_-]{16,64}$")
 
@@ -473,6 +518,13 @@ def get_config():
         "products": payments.PRODUCTS,
         "costs": {"unlock": UNLOCK_COST, "advice": ADVICE_COST, "followup": FOLLOWUP_COST},
         "followup_max": FOLLOWUP_MAX,
+        "limits": {
+            "enabled": LIMITS_ENABLED,
+            "reading_free": LIMIT_READING_FREE,
+            "reading_paid": LIMIT_READING_PAID,
+            "extra_free": LIMIT_EXTRA_FREE,
+            "extra_paid": LIMIT_EXTRA_PAID,
+        },
     }
 
 
@@ -497,7 +549,10 @@ async def tarot_reading_stream(req: ReadingRequest, request: Request):
     system_prompt = build_system_prompt(req.category)
     user_prompt = build_user_prompt(req, cards)
     reading_id = uuid.uuid4().hex
-    lock_on = paywall_enabled() and not CRISIS_RE.search(req.concern)
+    crisis = bool(CRISIS_RE.search(req.concern))
+    lock_on = paywall_enabled() and not crisis
+    # 위기 상황의 안내는 한도와 상관없이 항상 받을 수 있어야 한다.
+    quota_day = None if crisis else use_quota(device, "reading")
     if device != "anonymous":
         STORE.ensure_wallet(device, client_ip(request), WELCOME_COINS, WELCOME_PER_IP_DAILY)
 
@@ -506,6 +561,7 @@ async def tarot_reading_stream(req: ReadingRequest, request: Request):
         yield sse({"type": "cards", "data": cards, "reading_id": reading_id, "spread": {"key": spread["key"], "label": spread["label"]}})
 
         if not gemini_client:
+            release_quota(device, "reading", quota_day)
             yield sse({"type": "error", "data": "engine_unavailable"})
             return
 
@@ -524,6 +580,8 @@ async def tarot_reading_stream(req: ReadingRequest, request: Request):
                 yield sse({"type": "content", "data": tail})
         except Exception:
             logger.exception("Gemini 스트리밍 실패")
+            if not splitter.full:  # 아무것도 받지 못했으면 이용 횟수를 돌려준다
+                release_quota(device, "reading", quota_day)
             # 내부 오류 문구는 노출하지 않고 프론트가 자체 해석 엔진으로 전환하도록 신호만 준다.
             yield sse({"type": "error", "data": "generation_failed"})
             return
@@ -609,7 +667,12 @@ async def advice_card(reading_id: str, request: Request):
 
         used = {c["id"] for c in r["cards"]}
         card = {**random.choice([c for c in TAROT_DB if c["id"] not in used]), "position": "조언"}
-        balance = _charge(device, ADVICE_COST, "advice", reading_id)
+        quota_day = use_quota(device, "extra")
+        try:
+            balance = _charge(device, ADVICE_COST, "advice", reading_id)
+        except HTTPException:
+            release_quota(device, "extra", quota_day)
+            raise
         system = (
             "너는 '별빛 타로'의 타로 마스터야. 이미 리딩을 마친 내담자에게 '조언 카드' 한 장을 더 건네는 중이야.\n"
             "- 해요체, 마크다운 제목 없이 일반 문장으로 4문장 이내(300자 안팎).\n"
@@ -630,6 +693,7 @@ async def advice_card(reading_id: str, request: Request):
                 raise RuntimeError("empty")
         except Exception:
             logger.exception("조언 카드 생성 실패")
+            release_quota(device, "extra", quota_day)
             _refund(device, ADVICE_COST, "advice_refund", reading_id)
             raise api_error(502, "generation_failed", "조언을 만들지 못했어요. 코인은 차감되지 않았어요.")
         advice = {"card": card, "text": text}
@@ -658,7 +722,12 @@ async def followup(reading_id: str, req: FollowUpRequest, request: Request):
         if not gemini_client:
             raise api_error(503, "engine_unavailable", "AI 엔진이 준비되지 않았어요.")
 
-        balance = _charge(device, FOLLOWUP_COST, "followup", reading_id)
+        quota_day = use_quota(device, "extra")
+        try:
+            balance = _charge(device, FOLLOWUP_COST, "followup", reading_id)
+        except HTTPException:
+            release_quota(device, "extra", quota_day)
+            raise
         system = (
             "너는 '별빛 타로'의 타로 마스터야. 이미 마친 리딩을 바탕으로, 내담자가 이어서 묻는 질문에 답해.\n"
             "- 해요체, 3~6문장, 400자 이내. 마크다운 제목은 쓰지 마.\n"
@@ -682,6 +751,7 @@ async def followup(reading_id: str, req: FollowUpRequest, request: Request):
                 raise RuntimeError("empty")
         except Exception:
             logger.exception("후속 질문 답변 실패")
+            release_quota(device, "extra", quota_day)
             _refund(device, FOLLOWUP_COST, "followup_refund", reading_id)
             raise api_error(502, "generation_failed", "답을 만들지 못했어요. 코인은 차감되지 않았어요.")
         count = STORE.append_followup(reading_id, {"q": question, "a": answer})

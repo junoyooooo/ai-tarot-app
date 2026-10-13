@@ -51,6 +51,7 @@ const FAQ = [
   ['제 기록은 어디에 저장되나요?', '상담 기록과 프로필은 이 기기의 브라우저에만 저장돼요. 브라우저 데이터를 지우거나 다른 기기로 바꾸면 볼 수 없어요.'],
   ['코인이 사라졌어요.', '코인은 이 기기에 묶여 있어요. 브라우저 데이터를 지우거나 다른 기기·다른 브라우저로 접속하면 보이지 않을 수 있어요. 아래 문의처로 알려 주세요.'],
   ['결제했는데 코인이 안 들어왔어요.', '화면을 새로고침해 보세요. 그래도 없으면 결제 내역과 함께 문의해 주세요. 결제는 되고 코인이 지급되지 않은 경우 확인 후 바로 처리해 드려요.'],
+  ['상담을 더 못 하겠다고 나와요.', '서비스를 안정적으로 유지하려고 하루에 이용할 수 있는 횟수가 정해져 있어요. 한국 시간 자정이 지나면 다시 이용할 수 있어요. 자세한 횟수는 위 ‘하루 이용 횟수’를 확인해 주세요.'],
   ['처음에 서버가 느려요.', '오래 사용하지 않으면 서버가 잠들어 있어서 첫 응답이 조금 늦을 수 있어요. 잠시 기다리면 정상으로 돌아와요.'],
   ['효과음을 끄고 싶어요.', '내 정보 → 소리와 진동에서 끌 수 있어요.'],
 ];
@@ -120,6 +121,28 @@ export default function Help({ onBack }) {
             </>
           )}
         </Section>
+
+        {cfg?.limits?.enabled && (
+          <Section id="limit" title="하루 이용 횟수" open={open === 'limit'} onToggle={toggle}>
+            <p>서비스를 안정적으로 운영하려고 하루 이용 횟수에 한도를 두고 있어요. 한도는 한국 시간 자정에 다시 채워져요.</p>
+            <ul className="rounded-2xl bg-white/70 divide-y divide-brand-100 text-[14px]">
+              <li className="flex justify-between gap-3 px-4 py-2.5">
+                <span>상담</span>
+                <b className="text-right">하루 {cfg.limits.reading_free}번</b>
+              </li>
+              <li className="flex justify-between gap-3 px-4 py-2.5">
+                <span>조언 카드 + 더 물어보기</span>
+                <b className="text-right">합쳐서 하루 {cfg.limits.extra_free}번</b>
+              </li>
+              <li className="flex justify-between gap-3 px-4 py-2.5">
+                <span>코인을 충전한 적이 있다면</span>
+                <b className="text-right">상담 {cfg.limits.reading_paid}번, 조언·질문 {cfg.limits.extra_paid}번</b>
+              </li>
+            </ul>
+            <p>한도 때문에 이용이 막힐 때는 코인이 차감되지 않아요. 이미 한 상담의 숨겨진 풀이를 여는 것은 한도와 상관없이 언제든 할 수 있어요.</p>
+            <p>이용자가 한꺼번에 몰리면 새 상담이 하루 일찍 마감될 수 있어요. 마음이 힘든 이야기를 적어 주시면 한도와 상관없이 언제든 도움이 될 안내를 드려요.</p>
+          </Section>
+        )}
 
         <Section id="faq" title="자주 묻는 질문" open={open === 'faq'} onToggle={toggle}>
           <dl className="space-y-3.5">

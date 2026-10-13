@@ -28,6 +28,7 @@ export default function useReading() {
   const [meta, setMeta] = useState({ one_line_summary: '', hashtags: [] });
   const [isComplete, setIsComplete] = useState(false);
   const [readingId, setReadingId] = useState(null); // 서버가 저장한 리딩 ID (자체 해석 엔진으로 전환되면 null)
+  const [limit, setLimit] = useState(null); // 하루 이용 한도에 닿았을 때 { scope, message }
   const [locked, setLocked] = useState(null); // { titles, cost } 잠긴 구간이 있을 때
 
   const pendingRef = useRef('');
@@ -140,6 +141,7 @@ export default function useReading() {
     setMeta({ one_line_summary: '', hashtags: [] });
     setReadingId(null);
     setLocked(null);
+    setLimit(null);
   };
 
   const skip = useCallback(() => {
@@ -189,7 +191,26 @@ export default function useReading() {
         body: JSON.stringify(payload),
         signal: controller.signal,
       });
-      if (!response.ok) throw new Error(`서버 응답 오류 (${response.status})`);
+      if (!response.ok) {
+        // 하루 이용 한도: 안내를 보여 주고 끝낸다(자체 해석 엔진으로 우회하지 않는다)
+        if (response.status === 429) {
+          let detail = null;
+          try {
+            detail = (await response.json()).detail;
+          } catch {
+            /* 본문 없음 */
+          }
+          if (detail && detail.code === 'daily_limit') {
+            clearTimeout(timeoutId);
+            if (runId === runIdRef.current) {
+              setLimit({ scope: detail.scope, message: detail.message });
+              setIsLoading(false);
+            }
+            return;
+          }
+        }
+        throw new Error(`서버 응답 오류 (${response.status})`);
+      }
       rearm();
 
       const reader = response.body.getReader();
@@ -285,5 +306,5 @@ export default function useReading() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  return { isLoading, loadingText, loadingSlow, cards, reading, meta, isComplete, readingId, locked, start, skip, reset, resume, applyUnlock };
+  return { isLoading, loadingText, loadingSlow, cards, reading, meta, isComplete, readingId, locked, limit, start, skip, reset, resume, applyUnlock };
 }

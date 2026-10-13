@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import TabBar from './components/TabBar';
 import ShopSheet from './components/ShopSheet';
 import { useWallet } from './hooks/useWallet';
@@ -10,6 +10,7 @@ import Profile from './screens/Profile';
 import Help from './screens/Help';
 import Play from './screens/Play';
 import { getProfile, saveProfile, getHistory } from './lib/storage';
+import { pendingKakaoCallback, finishKakaoLogin, clearCallbackFromUrl } from './lib/auth';
 
 export default function App() {
   const wallet = useWallet();
@@ -19,11 +20,44 @@ export default function App() {
   const [seed, setSeed] = useState(null); // 홈에서 분야를 골라 상담으로 넘어올 때 사용
   const [openId, setOpenId] = useState(null); // 기록 상세로 열려 있는 항목
 
+  // 카카오 로그인 화면에서 돌아온 경우: 코드를 서버에 보내 로그인을 마무리하고 화면을 새로 불러옵니다.
+  const [auth, setAuth] = useState(() => (pendingKakaoCallback() ? { busy: true } : null));
+  useEffect(() => {
+    const cb = pendingKakaoCallback();
+    if (!cb) return;
+    finishKakaoLogin(cb)
+      .then(() => {
+        clearCallbackFromUrl();
+        window.location.replace('/');
+      })
+      .catch((e) => {
+        clearCallbackFromUrl();
+        setAuth({ busy: false, message: e.message || '로그인에 실패했어요. 다시 시도해 주세요.' });
+      });
+  }, []);
+
   const goTab = (next) => {
     if (next === 'history') setOpenId(null);
     setTab(next);
     window.scrollTo({ top: 0 });
   };
+
+  if (auth) {
+    return (
+      <div className="app-shell">
+        <div className="min-h-screen flex flex-col items-center justify-center px-8 text-center">
+          <p className="text-[17px] font-extrabold text-ink break-keep">
+            {auth.busy ? '카카오 로그인 중이에요…' : auth.message}
+          </p>
+          {!auth.busy && (
+            <button type="button" onClick={() => setAuth(null)} className="mt-5 rounded-full bg-brand-600 text-white font-bold px-6 py-3">
+              돌아가기
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   if (!profile) {
     return (

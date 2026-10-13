@@ -16,6 +16,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
+import kakao_auth
 import payments
 import play
 from spreads import CATEGORY_LABELS, position_labels, spread_for
@@ -517,6 +518,33 @@ def health():
     return {"ok": True}
 
 
+class KakaoLogin(BaseModel):
+    code: str = Field(min_length=1, max_length=600)
+    redirect_uri: str = Field(min_length=1, max_length=300)
+
+
+def kakao_redirect_ok(uri: str) -> bool:
+    allowed = [u.strip() for u in os.getenv("KAKAO_REDIRECT_URIS", "").split(",") if u.strip()]
+    allowed = allowed or [o.rstrip("/") + "/" for o in ALLOWED_ORIGINS]
+    return uri in allowed
+
+
+@app.post("/api/auth/kakao")
+async def auth_kakao(body: KakaoLogin, request: Request):
+    """카카오 인가 코드로 로그인. 이미 가입한 회원이면 그 회원의 기기 ID를 돌려줘서 다른 기기에서도 같은 기록을 이어 쓴다."""
+    if not kakao_auth.enabled():
+        raise api_error(404, "auth_disabled", "아직 카카오 로그인을 쓸 수 없어요.")
+    if not kakao_redirect_ok(body.redirect_uri):
+        raise api_error(400, "bad_redirect", "허용되지 않은 주소예요.")
+    device = device_id_from(request, required=True)
+    try:
+        kakao_id, nickname = await kakao_auth.fetch_profile(body.code, body.redirect_uri)
+    except kakao_auth.KakaoError:
+        raise api_error(400, "kakao_failed", "카카오 로그인에 실패했어요. 다시 시도해 주세요.")
+    new_device, status = STORE.link_account(kakao_id, nickname, device)
+    return {"device_id": new_device, "nickname": nickname, "created": status == "created", "switched": new_device != device}
+
+
 @app.get("/api/config")
 def get_config():
     mode = payments.payments_mode()
@@ -527,6 +555,7 @@ def get_config():
         "products": payments.PRODUCTS,
         "costs": {"unlock": UNLOCK_COST, "advice": ADVICE_COST, "followup": FOLLOWUP_COST},
         "followup_max": FOLLOWUP_MAX,
+        "auth": {"kakao": {"enabled": kakao_auth.enabled(), "client_id": kakao_auth.rest_api_key()}},
         "play": {
             "enabled": PLAY_ENABLED,
             "plays_per_day": PLAY_PLAYS_PER_DAY,

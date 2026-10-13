@@ -46,3 +46,9 @@ VITE_BIZ_NAME, VITE_BIZ_REP, VITE_BIZ_REG_NO, VITE_BIZ_ECOMM_NO, VITE_BIZ_ADDRES
 - 아이템 목록·가격: backend/play.py, 그림: frontend/src/lib/items.jsx (같은 id), 마스코트별 착용 위치: frontend/src/lib/mascotAnchors.js
 - 새 마스코트 그림을 바꾸면 mascotAnchors.js 의 좌표도 다시 맞춰 주세요.
 - 비용: 게임·아이템은 AI 호출이 없어 0원이에요. 코인으로 바뀌는 건 주 1회 상담 1회분(약 8원)이 최대예요.
+
+## 카카오 로그인
+- Render 환경변수: `KAKAO_REST_API_KEY`(필수, 비어 있으면 로그인 버튼이 안 보여요), `KAKAO_CLIENT_SECRET`(카카오에서 클라이언트 시크릿을 켠 경우).
+- 리다이렉트 URI는 카카오 콘솔에 `https://<프론트 주소>/` 를 등록하세요. 서버는 `ALLOWED_ORIGINS`(또는 `KAKAO_REDIRECT_URIS`)에 있는 주소만 받아요.
+- 로그인하면 카카오 회원번호가 기기 ID(코인·별가루가 묶인 키)에 연결돼요. 다른 기기에서 같은 회원이 로그인하면 처음 기기의 ID를 받아 같은 기록을 이어 써요. 상담 기록(풀이 내용)은 기기에만 저장돼요.
+- 계정 표(`accounts`)도 SQLite라, 영구 디스크나 외부 DB로 옮기기 전에는 서버 재시작 때 연결이 사라질 수 있어요.

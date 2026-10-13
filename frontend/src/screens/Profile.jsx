@@ -5,6 +5,7 @@ import { useLook } from '../lib/look';
 import Collection from '../components/Collection';
 import CoinChip from '../components/CoinChip';
 import { useWallet } from '../hooks/useWallet';
+import { getAccount, logoutAccount, startKakaoLogin } from '../lib/auth';
 import { getSettings, setSetting, playSfx } from '../lib/sound';
 import { saveProfile, validateBirthdate, clearAll } from '../lib/storage';
 import { cleanName } from '../tarotData';
@@ -22,6 +23,9 @@ export default function Profile({ profile, historyCount, onProfileChange, onClea
     setPrefs(next);
     if (next[key]) playSfx(key === 'sound' ? 'pick' : 'tap');
   };
+
+  const [account, setAccount] = useState(() => getAccount());
+  const kakao = wallet?.config?.auth?.kakao;
 
   const dirty = form.name.trim() !== profile.name || form.birthdate !== profile.birthdate;
 
@@ -49,6 +53,40 @@ export default function Profile({ profile, historyCount, onProfileChange, onClea
         <p className="mt-3 text-[20px] font-extrabold text-ink">{cleanName(profile.name)}님</p>
         <p className="mt-0.5 text-[13px] text-mute">지금까지 {historyCount}번 상담했어요</p>
       </div>
+
+      {(account || kakao?.enabled) && (
+        <div className="mt-4 rounded-[22px] bg-white shadow-soft px-5 py-4">
+          {account ? (
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-[14px] font-bold text-ink truncate">카카오로 로그인됨{account.nickname ? ` · ${account.nickname}` : ''}</p>
+                <p className="text-[12px] text-mute break-keep">다른 기기에서 로그인하면 코인과 별가루가 그대로 이어져요.</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  logoutAccount();
+                  setAccount(null);
+                }}
+                className="shrink-0 text-[13px] font-semibold text-mute underline"
+              >
+                로그아웃
+              </button>
+            </div>
+          ) : (
+            <>
+              <button
+                type="button"
+                onClick={() => startKakaoLogin(kakao.client_id)}
+                className="w-full rounded-2xl bg-[#FEE500] py-3.5 text-[15px] font-bold text-[#191919]"
+              >
+                카카오로 시작하기
+              </button>
+              <p className="mt-2 text-[12px] text-mute text-center break-keep">로그인하면 코인·별가루·꾸미기가 다른 기기에서도 이어져요. 상담 기록은 이 기기에만 저장돼요.</p>
+            </>
+          )}
+        </div>
+      )}
 
       {wallet?.enabled && (
         <div className="mt-4 flex items-center justify-between rounded-[22px] bg-gold-200/40 px-5 py-3.5">

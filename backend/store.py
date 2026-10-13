@@ -6,6 +6,7 @@
 import hashlib
 import json
 import os
+import secrets
 import sqlite3
 import threading
 import time
@@ -85,6 +86,12 @@ CREATE TABLE IF NOT EXISTS exchange_grants (
     ip_hash TEXT NOT NULL,
     week TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS accounts (
+    kakao_id TEXT PRIMARY KEY,
+    device_id TEXT NOT NULL UNIQUE,
+    nickname TEXT NOT NULL DEFAULT '',
+    created_at REAL NOT NULL
+);
 CREATE TABLE IF NOT EXISTS orders (
     order_id TEXT PRIMARY KEY,
     device_id TEXT NOT NULL,
@@ -130,6 +137,23 @@ class Store:
                 raise
             finally:
                 conn.close()
+
+    # ------------------------------------------------------------------ 계정(카카오 로그인)
+    def link_account(self, kakao_id: str, nickname: str, device_id: str) -> Tuple[str, str]:
+        """카카오 회원을 기기 ID(코인·별가루가 묶인 키)에 연결한다. (기기 ID, 'created'|'existing')을 돌려준다.
+        이미 있는 회원이면 그 회원의 기기 ID를 돌려줘서 어느 기기에서든 같은 기록을 쓰게 한다."""
+        with self._tx() as c:
+            row = c.execute("SELECT device_id FROM accounts WHERE kakao_id=?", (kakao_id,)).fetchone()
+            if row:
+                c.execute("UPDATE accounts SET nickname=? WHERE kakao_id=?", (nickname, kakao_id))
+                return row["device_id"], "existing"
+            taken = c.execute("SELECT 1 FROM accounts WHERE device_id=?", (device_id,)).fetchone()
+            device = ("k" + secrets.token_hex(16)) if taken else device_id
+            c.execute(
+                "INSERT INTO accounts(kakao_id, device_id, nickname, created_at) VALUES (?,?,?,?)",
+                (kakao_id, device, nickname, time.time()),
+            )
+            return device, "created"
 
     # ------------------------------------------------------------------ 하루 이용 한도
     GLOBAL_ID = "*"

@@ -20,3 +20,14 @@ export function getDeviceId() {
     return memoryId;
   }
 }
+
+// 카카오 로그인으로 기존 회원의 기록을 이어 받을 때, 그 회원의 기기 ID로 바꿉니다.
+export function setDeviceId(id) {
+  if (!/^[A-Za-z0-9_-]{16,64}$/.test(id)) return;
+  memoryId = id;
+  try {
+    window.localStorage.setItem(KEY, id);
+  } catch {
+    /* 저장소가 막힌 환경: 이번 접속 동안만 유지 */
+  }
+}

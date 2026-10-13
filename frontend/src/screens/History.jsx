@@ -6,7 +6,8 @@ import ShareActions from '../components/ShareActions';
 import LockedSection from '../components/LockedSection';
 import ReadingExtras from '../components/ReadingExtras';
 import { categoryByKey } from '../lib/categories';
-import { removeHistory, updateHistory } from '../lib/storage';
+import { removeHistory, updateHistory, getMemos, setMemo, MEMO_MAX, todayKey } from '../lib/storage';
+import { isoKey, specialOn, specialsInMonth } from '../lib/specialDays';
 import { TAROT_CARDS, getKoName, cleanName } from '../tarotData';
 
 const DOW = ['일', '월', '화', '수', '목', '금', '토'];
@@ -121,10 +122,13 @@ function Detail({ entry, profile, onBack, onDelete, onChanged }) {
 }
 
 /* ------------------------- 목록 + 달력 ------------------------- */
-export default function History({ profile, history, openId, onOpenChange, onChanged }) {
+export default function History({ profile, history, openId, onOpenChange, onChanged, onStartConsult }) {
   const now = new Date();
   const [month, setMonth] = useState({ y: now.getFullYear(), m: now.getMonth() });
   const [selectedDay, setSelectedDay] = useState(null);
+  const [memos, setMemos] = useState(() => getMemos());
+  const [draft, setDraft] = useState('');
+  const [memoSaved, setMemoSaved] = useState(false);
 
   const open = openId ? history.find((e) => e.id === openId) : null;
   if (open) {
@@ -157,6 +161,22 @@ export default function History({ profile, history, openId, onOpenChange, onChan
     setSelectedDay(null);
   };
 
+  const isoOf = (day) => isoKey(month.y, month.m + 1, day);
+  const selectDay = (day) => {
+    const next = selectedDay === day ? null : day;
+    setSelectedDay(next);
+    setDraft(next ? memos[isoOf(next)] || '' : '');
+    setMemoSaved(false);
+  };
+  const saveMemo = () => {
+    setMemos(setMemo(isoOf(selectedDay), draft));
+    setMemoSaved(true);
+    setTimeout(() => setMemoSaved(false), 1500);
+  };
+  const monthSpecials = specialsInMonth(month.y, month.m + 1);
+  const selSpecial = selectedDay ? specialOn(isoOf(selectedDay)) : null;
+  const selIsFuture = selectedDay ? isoOf(selectedDay) >= todayKey() : false;
+
   const list = selectedDay ? history.filter((e) => dayKey(e.ts) === `${month.y}-${month.m}-${selectedDay}`) : history;
   const todayStr = dayKey(Date.now());
 
@@ -187,25 +207,93 @@ export default function History({ profile, history, openId, onOpenChange, onChan
             if (!day) return <span key={`e${i}`} />;
             const key = `${month.y}-${month.m}-${day}`;
             const entries = byDay[key] || [];
+            const iso = isoOf(day);
+            const special = specialOn(iso);
+            const hasMemo = Boolean(memos[iso]);
             const isSel = selectedDay === day;
             const isToday = key === todayStr;
             return (
               <button
                 key={key}
                 type="button"
-                disabled={entries.length === 0}
-                onClick={() => setSelectedDay(isSel ? null : day)}
-                className={`relative h-11 flex flex-col items-center justify-center rounded-2xl text-[14px] font-semibold ${
-                  isSel ? 'bg-brand-500 text-white' : isToday ? 'text-brand-600 font-extrabold' : 'text-ink'
-                } ${entries.length ? 'cursor-pointer' : 'cursor-default text-ink/70'}`}
+                onClick={() => selectDay(day)}
+                aria-label={`${month.m + 1}월 ${day}일${special ? ` ${special.name}` : ''}${hasMemo ? ', 메모 있음' : ''}`}
+                className={`relative h-11 flex flex-col items-center justify-center rounded-2xl text-[14px] font-semibold cursor-pointer ${
+                  isSel ? 'bg-brand-500 text-white' : special ? 'bg-[#fff1c9] text-ink' : isToday ? 'text-brand-600 font-extrabold' : 'text-ink'
+                }`}
               >
                 {day}
-                {entries.length > 0 && <span className={`absolute bottom-1 w-1.5 h-1.5 rounded-full ${isSel ? 'bg-white' : 'bg-brand-400'}`} />}
+                {special && <span className="absolute top-0 right-0.5 text-[10px] leading-none" aria-hidden="true">{special.emoji}</span>}
+                {(entries.length > 0 || hasMemo) && (
+                  <span className="absolute bottom-1 flex gap-0.5" aria-hidden="true">
+                    {entries.length > 0 && <span className={`w-1.5 h-1.5 rounded-full ${isSel ? 'bg-white' : 'bg-brand-400'}`} />}
+                    {hasMemo && <span className={`w-1.5 h-1.5 rounded-full ${isSel ? 'bg-white/80' : 'bg-[#f2a93b]'}`} />}
+                  </span>
+                )}
               </button>
             );
           })}
         </div>
       </div>
+
+      {/* 이번 달 특별한 날 */}
+      {monthSpecials.length > 0 && (
+        <div className="mt-3 flex flex-wrap gap-2">
+          {monthSpecials.map((sp) => (
+            <button
+              key={sp.day}
+              type="button"
+              onClick={() => selectDay(sp.day)}
+              className="inline-flex items-center gap-1 rounded-full bg-[#fff1c9] px-3 py-1.5 text-[12.5px] font-bold text-ink cursor-pointer"
+            >
+              <span aria-hidden="true">{sp.emoji}</span> {month.m + 1}/{sp.day} {sp.name}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* 고른 날: 특별한 날 안내 + 한 줄 메모 */}
+      {selectedDay && (
+        <div className="mt-3 rounded-[24px] bg-white shadow-soft px-4 py-4 space-y-3">
+          {selSpecial && (
+            <div className="rounded-2xl bg-gradient-to-br from-[#fff1c9] to-[#ffd9e6] px-4 py-3">
+              <p className="text-[12px] font-bold text-[#a8385e]">
+                {selSpecial.emoji} {selSpecial.name}
+              </p>
+              <p className="mt-0.5 text-[14px] font-bold leading-snug text-ink break-keep">{selSpecial.line}</p>
+              {selIsFuture && onStartConsult && (
+                <button
+                  type="button"
+                  onClick={() => onStartConsult(selSpecial.category)}
+                  className="mt-2.5 inline-flex items-center gap-1 bg-white text-[#a8385e] font-bold text-[13px] rounded-full pl-3.5 pr-2.5 py-1.5 cursor-pointer"
+                >
+                  카드에게 물어보기 <ChevronRight className="w-4 h-4" aria-hidden="true" />
+                </button>
+              )}
+            </div>
+          )}
+          <div>
+            <label htmlFor="day-memo" className="text-[12.5px] font-bold text-mute">
+              {month.m + 1}월 {selectedDay}일 메모
+            </label>
+            <div className="mt-1.5 flex gap-2">
+              <input
+                id="day-memo"
+                value={draft}
+                maxLength={MEMO_MAX}
+                onChange={(e) => setDraft(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && saveMemo()}
+                placeholder="기념일이나 한 줄 메모 (최대 40자)"
+                className="min-w-0 flex-1 rounded-2xl bg-brand-50 px-4 py-2.5 text-[14px] text-ink placeholder:text-mute/70 outline-none focus:ring-2 focus:ring-brand-300"
+              />
+              <button type="button" onClick={saveMemo} className="shrink-0 rounded-2xl bg-brand-500 text-white font-bold text-[14px] px-4 cursor-pointer">
+                {memoSaved ? '저장됨' : '저장'}
+              </button>
+            </div>
+            <p className="mt-1.5 text-[11.5px] text-mute">비워서 저장하면 메모가 지워져요. 메모는 이 기기에만 저장돼요.</p>
+          </div>
+        </div>
+      )}
 
       {/* 목록 */}
       <div className="mt-7 mb-3 flex items-center justify-between">
@@ -221,7 +309,7 @@ export default function History({ profile, history, openId, onOpenChange, onChan
         <div className="rounded-[24px] bg-brand-50 px-5 py-8 flex flex-col items-center text-center">
           <Mascot id={9} className="w-16 h-[72px]" />
           <p className="mt-3 text-[14px] leading-relaxed text-mute break-keep">
-            {history.length === 0 ? '아직 기록이 없어요. 첫 상담을 해 보세요.' : '이 날의 기록은 없어요.'}
+            {history.length === 0 && !selectedDay ? '아직 기록이 없어요. 첫 상담을 해 보세요.' : '이 날의 상담 기록은 없어요.'}
           </p>
         </div>
       ) : (

@@ -38,7 +38,7 @@ VITE_BIZ_NAME, VITE_BIZ_REP, VITE_BIZ_REG_NO, VITE_BIZ_ECOMM_NO, VITE_BIZ_ADDRES
 | 변수 | 기본 | 설명 |
 |---|---|---|
 | PLAY_ENABLED | true | false 면 게임·꾸미기 숨김 |
-| PLAY_PLAYS_PER_DAY | 3 | 하루 판 수 |
+| PLAY_PLAYS_PER_DAY | 2 | 하루 판 수 |
 | PLAY_DAILY_STARDUST | 6 | 하루 별가루 상한 (점수와 무관) |
 | PLAY_MIN_SECONDS | 15 | 한 판이 최소 이 시간 이상이어야 정산 |
 | PLAY_EXCHANGE_COST | 30 | 별가루 → 코인 1개 교환 비용 (결제 기능이 켜졌을 때만, 기기당 주 1회) |

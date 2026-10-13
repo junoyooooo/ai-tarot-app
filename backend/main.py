@@ -179,7 +179,7 @@ KST = timezone(timedelta(hours=9))
 
 # 별똥별 받기(미니게임)·별가루. 하루 보상 상한과 코인 교환 횟수가 비용을 막아 줍니다.
 PLAY_ENABLED = _env_bool("PLAY_ENABLED", True)
-PLAY_PLAYS_PER_DAY = _env_int("PLAY_PLAYS_PER_DAY", 3)
+PLAY_PLAYS_PER_DAY = _env_int("PLAY_PLAYS_PER_DAY", 2)
 PLAY_DAILY_STARDUST = _env_int("PLAY_DAILY_STARDUST", 6)
 PLAY_MIN_SECONDS = _env_int("PLAY_MIN_SECONDS", 15)
 PLAY_EXCHANGE_COST = _env_int("PLAY_EXCHANGE_COST", 30)

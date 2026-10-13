@@ -36,6 +36,12 @@ export default function App() {
       });
   }, []);
 
+  const startConsult = (category) => {
+    setSeed({ category, nonce: Date.now() });
+    setTab('consult');
+    window.scrollTo({ top: 0 });
+  };
+
   const goTab = (next) => {
     if (next === 'history') setOpenId(null);
     setTab(next);
@@ -100,7 +106,7 @@ export default function App() {
         </div>
 
         {tab === 'history' && (
-          <History profile={profile} history={history} openId={openId} onOpenChange={setOpenId} onChanged={setHistory} />
+          <History profile={profile} history={history} openId={openId} onOpenChange={setOpenId} onChanged={setHistory} onStartConsult={startConsult} />
         )}
 
         {tab === 'help' && <Help onBack={() => goTab('profile')} />}

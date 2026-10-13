@@ -12,7 +12,7 @@ def play_once(client, score=25, dev=None):
 
 def test_state_has_starter_and_catalog(client):
     d = client.get("/api/play/state", headers=H()).json()
-    assert d["stardust"] == 0 and "g_sun" in d["items"] and d["plays_left"] == 3
+    assert d["stardust"] == 0 and "g_sun" in d["items"] and d["plays_left"] == 2
     assert d["catalog"]["h_crown"]["price"] == 16
 
 
@@ -25,13 +25,21 @@ def test_too_fast_claim_rejected(client):
 def test_daily_cap_and_play_limit(client, env):
     env.setattr(main, "PLAY_MIN_SECONDS", 0)
     a = play_once(client, 25).json()
-    assert a["gain"] == 3 and a["stardust"] == 3 and a["plays_left"] == 2
+    assert a["gain"] == 3 and a["stardust"] == 3 and a["plays_left"] == 1
     b = play_once(client, 25).json()
     assert b["gain"] == 3 and b["stardust"] == 6
+    assert b["plays_left"] == 0
+    c = play_once(client, 25)  # 기본은 하루 2판
+    assert c.status_code == 429 and c.json()["detail"]["code"] == "play_limit"
+
+
+def test_cap_stops_extra_stardust(client, env):
+    env.setattr(main, "PLAY_MIN_SECONDS", 0)
+    env.setattr(main, "PLAY_PLAYS_PER_DAY", 3)
+    play_once(client, 25)
+    play_once(client, 25)
     c = play_once(client, 25).json()
     assert c["gain"] == 0 and c["capped"] and c["stardust"] == 6  # 하루 상한 6
-    d = play_once(client, 25)
-    assert d.status_code == 429 and d.json()["detail"]["code"] == "play_limit"
 
 
 def test_score_cannot_exceed_reward_tiers(client, env):
@@ -58,6 +66,7 @@ def test_other_device_cannot_claim_run(client, env):
 def test_buy_deducts_and_equip_validates(client, env):
     env.setattr(main, "PLAY_MIN_SECONDS", 0)
     env.setattr(main, "PLAY_DAILY_STARDUST", 100)
+    env.setattr(main, "PLAY_PLAYS_PER_DAY", 3)
     for _ in range(3):
         play_once(client, 25)  # 9
     d = client.post("/api/play/buy", json={"item_id": "h_beanie"}, headers=H()).json()

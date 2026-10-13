@@ -50,7 +50,7 @@ export const saveDaily = (daily) => write('daily', daily);
 
 export function clearAll() {
   try {
-    ['profile', 'history', 'daily', 'collection'].forEach((k) => window.localStorage.removeItem(PREFIX + k));
+    ['profile', 'history', 'daily', 'collection', 'memos'].forEach((k) => window.localStorage.removeItem(PREFIX + k));
     // 기기 ID(device)는 코인과 연결돼 있어 일부러 지우지 않습니다.
   } catch {
     /* 무시 */
@@ -74,4 +74,16 @@ export function validateBirthdate(birthdate) {
     return '올바른 생년월일을 입력해 주세요.';
   }
   return '';
+}
+
+// 달력 한 줄 메모 (날짜 'YYYY-MM-DD' → 짧은 글). 길게 쓰지 않도록 40자까지.
+export const MEMO_MAX = 40;
+export const getMemos = () => read('memos', {});
+export function setMemo(iso, text) {
+  const memos = { ...getMemos() };
+  const t = String(text || '').trim().slice(0, MEMO_MAX);
+  if (t) memos[iso] = t;
+  else delete memos[iso];
+  write('memos', memos);
+  return memos;
 }

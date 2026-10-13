@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ChevronRight, Sparkles } from 'lucide-react';
 import Mascot from '../components/Mascot';
 import CardFlip from '../components/CardFlip';
@@ -7,6 +7,8 @@ import Avatar from '../components/Avatar';
 import { useWallet } from '../hooks/useWallet';
 import { useLook } from '../lib/look';
 import { recordCards } from '../lib/collection';
+import { playSfx } from '../lib/sound';
+import { upcomingSpecial } from '../lib/specialDays';
 import { CATEGORIES, categoryByKey } from '../lib/categories';
 import { getDaily, saveDaily, todayKey } from '../lib/storage';
 import { getDailyCard, getDailyMessage, getKoName, TAROT_CARDS, cleanName } from '../tarotData';
@@ -31,6 +33,12 @@ export default function Home({ profile, history, onStartConsult, onOpenEntry, on
     return saved && saved.date === today ? saved : null;
   });
   const [flipped, setFlipped] = useState(Boolean(daily));
+  const [showText, setShowText] = useState(Boolean(daily)); // 카드가 뒤집힌 뒤 풀이가 스르륵 나타나도록 따로 관리
+  const [replaying, setReplaying] = useState(false);
+  const timers = useRef([]);
+  const later = (fn, ms) => timers.current.push(setTimeout(fn, ms));
+  useEffect(() => () => timers.current.forEach(clearTimeout), []);
+  const special = useMemo(() => upcomingSpecial(new Date(), 3), []);
 
   const name = cleanName(profile.name);
   const card = daily ? TAROT_CARDS.find((c) => c.id === daily.cardId) : getDailyCard(profile.name, profile.birthdate, today);
@@ -41,6 +49,27 @@ export default function Home({ profile, history, onStartConsult, onOpenEntry, on
     recordCards([next.cardId]);
     setDaily(next);
     setFlipped(true);
+    revealText();
+  };
+
+  const revealText = () =>
+    later(() => {
+      setShowText(true);
+      setReplaying(false);
+      playSfx('reveal');
+    }, 700);
+
+  // 이미 뽑은 카드를 눌러 다시 뒤집어 보기
+  const replay = () => {
+    if (replaying) return;
+    setReplaying(true);
+    setShowText(false);
+    setFlipped(false);
+    later(() => {
+      playSfx('flip');
+      setFlipped(true);
+      revealText();
+    }, 550);
   };
 
   const recent = history.slice(0, 3);
@@ -88,19 +117,39 @@ export default function Home({ profile, history, onStartConsult, onOpenEntry, on
         </button>
       )}
 
+      {/* 명절·기념일 안내 (오늘이거나 3일 안일 때만) */}
+      {special && (
+        <div className="mt-3 rounded-[24px] bg-gradient-to-br from-[#fff1c9] to-[#ffd9e6] px-5 py-4">
+          <p className="text-[12px] font-bold text-[#a8385e]">
+            {special.emoji} {special.name} · {special.diff === 0 ? '오늘' : `D-${special.diff}`}
+          </p>
+          <p className="mt-1 text-[14.5px] font-bold leading-snug text-ink break-keep">{special.line}</p>
+          <button
+            type="button"
+            onClick={() => onStartConsult(special.category)}
+            className="mt-3 inline-flex items-center gap-1 bg-white text-[#a8385e] font-bold text-[13px] rounded-full pl-4 pr-3 py-2 cursor-pointer active:scale-95 transition-transform"
+          >
+            카드에게 물어보기 <ChevronRight className="w-4 h-4" aria-hidden="true" />
+          </button>
+        </div>
+      )}
+
       {/* 오늘의 카드 */}
       <h2 className="mt-8 mb-3 text-[19px] font-extrabold text-ink">오늘의 카드</h2>
       <div className="rounded-[28px] bg-gradient-to-br from-[#ffd9b3] to-[#ffb8cf] p-4 flex gap-4 items-center">
         <div className="w-[104px] shrink-0">
-          <CardFlip card={card} flipped={flipped} onFlip={draw} label="오늘의" />
+          <CardFlip card={card} flipped={flipped} onFlip={draw} onReplay={replay} label="오늘의" />
         </div>
         <div className="flex-1 min-w-0">
-          {flipped ? (
+          {flipped && showText ? (
             <div className="animate-fade-in-up">
               <p className="text-[12px] font-bold text-[#a8385e]">오늘을 응원하는 카드</p>
               <p className="mt-0.5 text-[20px] font-extrabold text-ink break-keep">{getKoName(card)}</p>
               <p className="mt-1.5 text-[13px] leading-relaxed text-ink/80 line-clamp-5 break-keep">{getDailyMessage(card.id, name)}</p>
+              <p className="mt-2 text-[11.5px] text-ink/45">카드를 누르면 다시 뒤집어 볼 수 있어요</p>
             </div>
+          ) : flipped || replaying ? (
+            <p className="text-[14px] font-bold text-[#a8385e] animate-pulse">카드가 이야기를 들려주려 해요…</p>
           ) : (
             <div>
               <p className="text-[12px] font-bold text-[#a8385e]">하루에 한 장</p>

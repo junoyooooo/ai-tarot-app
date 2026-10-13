@@ -5,153 +5,136 @@
 @layer base {
   html {
     -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
   }
 
   body {
     font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    background-color: #07070f;
-    color: #e6e7f2;
+    background-color: #cdb6f2;
+    color: #1d1836;
     margin: 0;
     padding: 0;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
+
+  button {
+    font-family: inherit;
+  }
 }
 
-/* ==========================================================================
-   밤하늘 배경 (별 + 은은한 오로라 빛)
-   ========================================================================== */
 @layer components {
-  .starfield {
+  /* 휴대폰 화면처럼 보이는 중앙 열 (큰 화면에서는 가운데 정렬) */
+  .app-shell {
+    position: relative;
+    width: 100%;
+    max-width: 430px;
+    min-height: 100vh;
+    min-height: 100dvh;
+    margin: 0 auto;
+    background: #fcfbff;
+    overflow-x: hidden;
+  }
+
+  @media (min-width: 520px) {
+    .app-shell {
+      min-height: calc(100dvh - 48px);
+      margin-top: 24px;
+      margin-bottom: 24px;
+      border-radius: 36px;
+      box-shadow: 0 30px 80px -30px rgba(70, 30, 140, 0.45);
+    }
+  }
+
+  .tabbar {
     position: fixed;
-    inset: 0;
-    z-index: 0;
-    pointer-events: none;
-    background:
-      radial-gradient(ellipse 80% 50% at 50% -10%, rgba(124, 92, 230, 0.34), transparent 70%),
-      radial-gradient(ellipse 60% 40% at 92% 100%, rgba(224, 185, 90, 0.1), transparent 70%),
-      radial-gradient(ellipse 50% 40% at 0% 72%, rgba(80, 60, 180, 0.18), transparent 70%),
-      #07070f;
+    left: 50%;
+    bottom: 0;
+    transform: translateX(-50%);
+    width: 100%;
+    max-width: 430px;
+    z-index: 30;
+    padding-bottom: env(safe-area-inset-bottom);
+    background: rgba(252, 251, 255, 0.94);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+    border-top: 1px solid #ece8f6;
   }
 
-  .starfield::before,
-  .starfield::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background-repeat: repeat;
+  @media (min-width: 520px) {
+    .tabbar {
+      bottom: 24px;
+      border-radius: 0 0 36px 36px;
+    }
   }
 
-  .starfield::before {
-    background-image:
-      radial-gradient(1px 1px at 20px 30px, rgba(255, 255, 255, 0.7), transparent),
-      radial-gradient(1px 1px at 90px 120px, rgba(255, 255, 255, 0.5), transparent),
-      radial-gradient(1.5px 1.5px at 160px 60px, rgba(236, 210, 139, 0.75), transparent),
-      radial-gradient(1px 1px at 210px 180px, rgba(255, 255, 255, 0.6), transparent),
-      radial-gradient(1px 1px at 60px 210px, rgba(255, 255, 255, 0.4), transparent);
-    background-size: 240px 240px;
-    opacity: 0.8;
-  }
-
-  .starfield::after {
-    background-image:
-      radial-gradient(1.5px 1.5px at 50px 70px, rgba(255, 255, 255, 0.9), transparent),
-      radial-gradient(1px 1px at 180px 140px, rgba(236, 210, 139, 0.9), transparent),
-      radial-gradient(1.5px 1.5px at 270px 250px, rgba(255, 255, 255, 0.8), transparent),
-      radial-gradient(1px 1px at 120px 290px, rgba(255, 255, 255, 0.7), transparent);
-    background-size: 330px 330px;
-    animation: twinkle 6s ease-in-out infinite alternate;
-  }
-
-  /* 유리 질감 카드 */
-  .glass {
-    background: rgba(20, 18, 44, 0.58);
-    border: 1px solid rgba(236, 210, 139, 0.14);
-    -webkit-backdrop-filter: blur(14px);
-    backdrop-filter: blur(14px);
-    box-shadow:
-      0 24px 60px -24px rgba(0, 0, 0, 0.7),
-      inset 0 1px 0 rgba(255, 255, 255, 0.04);
-  }
-
-  .gold-text {
-    background-image: linear-gradient(180deg, #f9eab9 0%, #e0b95a 100%);
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
-    color: transparent;
-  }
-
-  .btn-gold {
-    background-image: linear-gradient(180deg, #f4dc9b 0%, #d9ad55 100%);
-    color: #1a1305;
+  .btn-primary {
+    background-image: linear-gradient(180deg, #8a45e0 0%, #7430c8 100%);
+    color: #fff;
     font-weight: 700;
-    box-shadow:
-      0 10px 30px -10px rgba(224, 185, 90, 0.55),
-      inset 0 1px 0 rgba(255, 255, 255, 0.45);
-    transition: filter 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
+    box-shadow: 0 12px 24px -12px rgba(116, 48, 200, 0.7);
+    transition: filter 0.2s ease, transform 0.15s ease;
   }
-  .btn-gold:hover {
+  .btn-primary:hover {
     filter: brightness(1.06);
-    box-shadow:
-      0 14px 36px -10px rgba(224, 185, 90, 0.7),
-      inset 0 1px 0 rgba(255, 255, 255, 0.5);
   }
-  .btn-gold:active {
+  .btn-primary:active {
     transform: scale(0.985);
   }
-  .btn-gold:disabled {
-    opacity: 0.55;
+  .btn-primary:disabled {
+    opacity: 0.5;
     cursor: not-allowed;
   }
 
-  .btn-ghost {
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(236, 210, 139, 0.28);
-    color: #f1e6c4;
-    transition: background 0.2s ease, border-color 0.2s ease, transform 0.15s ease;
+  .btn-soft {
+    background: #f3ecff;
+    color: #5f26a6;
+    font-weight: 600;
+    transition: background 0.2s ease, transform 0.15s ease;
   }
-  .btn-ghost:hover {
-    background: rgba(236, 210, 139, 0.1);
-    border-color: rgba(236, 210, 139, 0.5);
+  .btn-soft:hover {
+    background: #eadcfd;
   }
-  .btn-ghost:active {
+  .btn-soft:active {
     transform: scale(0.985);
   }
-  .btn-ghost:disabled {
+  .btn-soft:disabled {
     opacity: 0.5;
     cursor: not-allowed;
   }
 
   .field {
     width: 100%;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: #f5f3fa;
+    border: 1.5px solid transparent;
     border-radius: 1rem;
-    padding: 0.9rem 1rem;
+    padding: 0.95rem 1rem;
     font-size: 0.95rem;
-    color: #f3f4fb;
-    transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+    color: #1d1836;
+    transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
   }
   .field::placeholder {
-    color: rgba(203, 207, 230, 0.42);
+    color: #a9a5bd;
   }
   .field:focus {
     outline: none;
-    background: rgba(255, 255, 255, 0.06);
-    border-color: rgba(236, 210, 139, 0.7);
-    box-shadow: 0 0 0 3px rgba(236, 210, 139, 0.14);
+    background: #fff;
+    border-color: #a46aee;
+    box-shadow: 0 0 0 4px rgba(164, 106, 238, 0.15);
   }
 
-  /* 로딩 링 */
   .loader-ring {
-    width: 64px;
-    height: 64px;
     border-radius: 9999px;
-    background: conic-gradient(from 0deg, rgba(236, 210, 139, 0), rgba(236, 210, 139, 0.95));
-    -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2px));
-    mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2px));
-    animation: spin 1.4s linear infinite;
+    background: conic-gradient(from 0deg, rgba(138, 69, 224, 0), rgba(138, 69, 224, 0.95));
+    -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 3px));
+    mask: radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 3px));
+    animation: spin 1.3s linear infinite;
+  }
+
+  /* 폴짝폴짝 뛰는 마스코트 */
+  .mascot-bounce {
+    animation: bounce 1.2s ease-in-out infinite;
+    transform-origin: 50% 100%;
   }
 }
 
@@ -172,7 +155,7 @@
 }
 
 .card-3d-inner {
-  transition: transform 0.9s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.6s ease;
+  transition: transform 0.85s cubic-bezier(0.2, 0.8, 0.2, 1);
   transform-origin: center center;
 }
 
@@ -184,26 +167,8 @@
   transform: rotateY(180deg);
 }
 
-/* 뒤집히기 전 카드가 살짝 떠 있는 느낌 */
 .card-float {
-  animation: floaty 5s ease-in-out infinite;
-}
-
-/* 뒤집힐 때 금빛이 번지는 효과 */
-@keyframes mysticBurst {
-  0% {
-    box-shadow: 0 0 0 0 rgba(224, 185, 90, 0.6);
-  }
-  55% {
-    box-shadow: 0 0 36px 10px rgba(224, 185, 90, 0.35);
-  }
-  100% {
-    box-shadow: 0 12px 30px -8px rgba(0, 0, 0, 0.6);
-  }
-}
-
-.burst-glow {
-  animation: mysticBurst 1.3s ease-out;
+  animation: floaty 4.5s ease-in-out infinite;
 }
 
 @keyframes floaty {
@@ -211,9 +176,11 @@
   50% { transform: translateY(-6px); }
 }
 
-@keyframes twinkle {
-  from { opacity: 0.25; }
-  to { opacity: 0.95; }
+@keyframes bounce {
+  0%, 100% { transform: translateY(0) scale(1, 1); }
+  40% { transform: translateY(-14px) scale(0.98, 1.02); }
+  60% { transform: translateY(-14px) scale(0.98, 1.02); }
+  85% { transform: translateY(0) scale(1.04, 0.96); }
 }
 
 @keyframes spin {
@@ -223,7 +190,7 @@
 @keyframes softFadeIn {
   from {
     opacity: 0;
-    transform: translateY(18px);
+    transform: translateY(14px);
   }
   to {
     opacity: 1;
@@ -232,16 +199,36 @@
 }
 
 .animate-fade-in-up {
-  animation: softFadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: softFadeIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateX(24px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.animate-slide-in {
+  animation: slideIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes popIn {
+  0% { transform: scale(0.6); opacity: 0; }
+  70% { transform: scale(1.06); opacity: 1; }
+  100% { transform: scale(1); }
+}
+
+.animate-pop-in {
+  animation: popIn 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
 }
 
 /* 움직임을 줄이는 설정을 쓰는 사용자 배려 */
 @media (prefers-reduced-motion: reduce) {
-  .starfield::after,
   .card-float,
   .loader-ring,
-  .burst-glow,
-  .animate-fade-in-up {
+  .mascot-bounce,
+  .animate-fade-in-up,
+  .animate-slide-in,
+  .animate-pop-in {
     animation: none !important;
   }
   .card-3d-inner {

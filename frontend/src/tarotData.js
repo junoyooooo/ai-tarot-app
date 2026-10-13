@@ -436,3 +436,25 @@ ${fill(future.id, 2)}
     hashtags: cat.hashtags,
   };
 }
+
+/* ==========================================================================
+   오늘의 카드: 날짜 + 이름 + 생년월일로 정해서 같은 날엔 같은 카드가 나옵니다.
+   ========================================================================== */
+function hashString(str) {
+  let h = 2166136261;
+  for (let i = 0; i < str.length; i++) {
+    h ^= str.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return h >>> 0;
+}
+
+export function getDailyCard(name, birthdate, dateKey) {
+  const idx = hashString(`${dateKey}|${cleanName(name)}|${birthdate || ''}`) % TAROT_CARDS.length;
+  return TAROT_CARDS[idx];
+}
+
+export function getDailyMessage(cardId, name) {
+  const text = CARD_TEXTS[cardId]?.[1] || '';
+  return text.replaceAll('{n}', cleanName(name));
+}

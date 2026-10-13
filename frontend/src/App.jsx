@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Sparkles, Moon, Sun, Wand2, RefreshCw, CreditCard, Lock, Camera, Share2, Download } from 'lucide-react';
+import { Sparkles, Moon, Sun, Wand2, RefreshCw, CreditCard, Lock, Camera, Share2, Download, X } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import ReactMarkdown from 'react-markdown';
 import { pickThreeCards, generateLocalReading } from './tarotData';
@@ -23,6 +23,7 @@ export default function App() {
   });
   const [isCapturing, setIsCapturing] = useState(false);
   const [isStreamComplete, setIsStreamComplete] = useState(false);
+  const [previewModalImg, setPreviewModalImg] = useState(null);
   const readingRef = useRef(null);
   const shareCardRef = useRef(null);
 
@@ -226,46 +227,70 @@ export default function App() {
       });
 
       const fileName = `AI타로_인스타스토리_${formData.name || '운명'}.png`;
+      const dataUrl = canvas.toDataURL('image/png');
 
-      // 1. 모바일 기기: Web Share API 지원 시 바로 사진 저장/인스타 공유 시트 띄우기
-      if (navigator.share && navigator.canShare) {
-        try {
-          const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
-          if (blob) {
-            const file = new File([blob], fileName, { type: 'image/png' });
-            if (navigator.canShare({ files: [file] })) {
-              await navigator.share({
-                files: [file],
-                title: `${formData.name || '내담자'}님의 AI 타로 운명 신탁`,
-                text: shareMetadata.one_line_summary || '오늘의 AI 타로 운세 결과',
-              });
-              setIsCapturing(false);
-              return;
-            }
-          }
-        } catch (shareErr) {
-          console.log('Web Share 취소 또는 미지원, 일반 다운로드로 전환:', shareErr);
-        }
-      }
-
-      // 2. 모바일 브라우저/PC 공통 Blob 다운로드 (iOS 사파리/안드로이드 크롬 완벽 호환)
+      // 1. PC 및 모바일 공통 파일 직접 다운로드 트리거 (PC와 동일한 동작)
       canvas.toBlob((blob) => {
-        if (!blob) {
-          throw new Error('Canvas blob generation failed');
+        if (blob) {
+          const blobUrl = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = blobUrl;
+          link.download = fileName;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          setTimeout(() => URL.revokeObjectURL(blobUrl), 2000);
         }
-        const blobUrl = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = blobUrl;
-        link.download = fileName;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        setTimeout(() => URL.revokeObjectURL(blobUrl), 1500);
       }, 'image/png');
+
+      // 2. 모바일 사용자를 위한 '꾹 눌러 사진 앱에 저장' 안내 팝업 모달 표시
+      setPreviewModalImg(dataUrl);
 
     } catch (error) {
       console.error('스토리 이미지 캡처 실패:', error);
-      alert('이미지 생성 중 문제가 발생했습니다. 브라우저 설정을 확인해 주세요.');
+      alert('이미지 생성 중 문제가 발생했습니다. 다시 시도해 주세요.');
+    } finally {
+      setIsCapturing(false);
+    }
+  };
+
+  const handleShareNative = async () => {
+    if (!shareCardRef.current) return;
+    setIsCapturing(true);
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 350));
+      
+      const canvas = await html2canvas(shareCardRef.current, {
+        scale: 2,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: '#D8B4E2',
+        logging: false,
+      });
+
+      const fileName = `AI타로_인스타스토리_${formData.name || '운명'}.png`;
+
+      // 모바일 기기 SNS 공유창 열기
+      if (navigator.share && navigator.canShare) {
+        const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+        if (blob) {
+          const file = new File([blob], fileName, { type: 'image/png' });
+          if (navigator.canShare({ files: [file] })) {
+            await navigator.share({
+              files: [file],
+              title: `${formData.name || '내담자'}님의 AI 타로 운명 신탁`,
+              text: shareMetadata.one_line_summary || '오늘의 AI 타로 운세 결과',
+            });
+            setIsCapturing(false);
+            return;
+          }
+        }
+      }
+
+      // Web Share 미지원 기기는 직접 다운로드 및 모달로 연결
+      handleDownloadStoryImage();
+    } catch (shareErr) {
+      console.log('공유 취소 또는 미지원:', shareErr);
     } finally {
       setIsCapturing(false);
     }
@@ -571,22 +596,36 @@ export default function App() {
                   </div>
 
                   {isStreamComplete && (
-                    <div className="mt-8 pt-5 border-t border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-4">
-                      {/* 인스타 스토리에 자랑하기 메인 버튼 */}
-                      <button
-                        onClick={handleDownloadStoryImage}
-                        disabled={isCapturing}
-                        className="w-full sm:w-auto px-6 py-3.5 rounded-2xl bg-gradient-to-r from-pink-500 via-purple-600 to-indigo-600 hover:from-pink-600 hover:to-indigo-700 text-white font-bold text-sm shadow-md hover:shadow-lg transform active:scale-95 transition flex items-center justify-center gap-2.5 cursor-pointer disabled:opacity-50"
-                      >
-                        <Camera className="w-4 h-4 text-pink-200" />
-                        <span>{isCapturing ? '스토리 이미지 제작 중...' : '📸 인스타 스토리에 자랑하기'}</span>
-                      </button>
+                    <div className="mt-8 pt-5 border-t border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-3">
+                      <div className="w-full sm:w-auto flex flex-col sm:flex-row gap-2.5 flex-1">
+                        {/* 1. 사진 앨범에 직접 저장하기 (PC/모바일 다운로드 + 꾹 눌러 저장 팝업) */}
+                        <button
+                          onClick={handleDownloadStoryImage}
+                          disabled={isCapturing}
+                          className="flex-1 py-3.5 px-5 rounded-2xl bg-gradient-to-r from-pink-500 via-purple-600 to-indigo-600 hover:from-pink-600 hover:to-indigo-700 text-white font-bold text-sm shadow-md hover:shadow-lg transform active:scale-95 transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                        >
+                          <Camera className="w-4 h-4 text-pink-200" />
+                          <span>{isCapturing ? '이미지 제작 중...' : '📸 이미지 앨범에 저장'}</span>
+                        </button>
 
+                        {/* 2. SNS 앱으로 바로 공유하기 (인스타/카톡) */}
+                        <button
+                          onClick={handleShareNative}
+                          disabled={isCapturing}
+                          className="py-3.5 px-4 rounded-2xl bg-purple-100 hover:bg-purple-200 text-purple-900 font-bold text-xs sm:text-sm transition flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+                        >
+                          <Share2 className="w-4 h-4 text-purple-700" />
+                          <span>바로 공유</span>
+                        </button>
+                      </div>
+
+                      {/* 3. 새로운 고민 점치기 */}
                       <button
                         onClick={handleReset}
-                        className="w-full sm:w-auto px-5 py-3 rounded-2xl bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold text-xs sm:text-sm transition cursor-pointer"
+                        className="w-full sm:w-auto px-4 py-3.5 rounded-2xl bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold text-xs transition cursor-pointer flex items-center justify-center gap-1"
                       >
-                        새로운 고민 점치기
+                        <RefreshCw className="w-3.5 h-3.5 text-gray-500" />
+                        <span>다시 점치기</span>
                       </button>
                     </div>
                   )}
@@ -601,6 +640,73 @@ export default function App() {
       <footer className="text-center text-xs text-purple-900/60 mt-8">
         © 2026 AI Tarot. All rights reserved.
       </footer>
+
+      {/* ==============================================================
+          [모바일 최적화: 꾹 눌러서 사진첩 저장 안내 모달 팝업]
+          ============================================================== */}
+      {previewModalImg && (
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex flex-col items-center justify-center p-4">
+          <div className="relative w-full max-w-sm bg-white rounded-3xl p-5 shadow-2xl flex flex-col items-center max-h-[92vh] overflow-y-auto">
+            {/* 상단 바 */}
+            <div className="w-full flex justify-between items-center mb-3">
+              <div className="flex items-center gap-1.5 text-purple-700 font-bold text-xs">
+                <Sparkles className="w-4 h-4" />
+                <span>스토리 이미지 완성!</span>
+              </div>
+              <button
+                onClick={() => setPreviewModalImg(null)}
+                className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-600 transition cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* 모바일 저장 안내 배너 */}
+            <div className="w-full bg-purple-50 border border-purple-200 text-purple-900 rounded-2xl p-3.5 text-xs mb-3 text-center leading-relaxed">
+              <p className="font-extrabold text-purple-950 mb-0.5">📱 모바일 앨범 저장 방법</p>
+              <p className="text-[11px] text-purple-800">
+                아래 이미지를 <strong>1초간 꾹 누르면</strong><br />
+                <span className="text-purple-600 font-bold">[사진에 저장]</span> 또는 <span className="text-purple-600 font-bold">[이미지 저장]</span>을 선택하실 수 있습니다!
+              </p>
+            </div>
+
+            {/* 생성된 9:16 이미지 */}
+            <div className="w-full rounded-2xl overflow-hidden shadow-md border border-purple-200 mb-4 bg-slate-900 flex justify-center">
+              <img
+                src={previewModalImg}
+                alt="AI 타로 인스타 스토리"
+                className="w-full max-h-[50vh] object-contain select-auto"
+              />
+            </div>
+
+            {/* 하단 버튼 */}
+            <div className="w-full grid grid-cols-2 gap-2">
+              <button
+                onClick={() => {
+                  const link = document.createElement('a');
+                  link.href = previewModalImg;
+                  link.download = `AI타로_인스타스토리_${formData.name || '운명'}.png`;
+                  link.click();
+                }}
+                className="py-3 px-3 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer"
+              >
+                <Download className="w-4 h-4 text-gray-600" />
+                <span>파일로 받기</span>
+              </button>
+              <button
+                onClick={() => {
+                  setPreviewModalImg(null);
+                  handleShareNative();
+                }}
+                className="py-3 px-3 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer"
+              >
+                <Share2 className="w-4 h-4 text-purple-200" />
+                <span>SNS로 보내기</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ==============================================================
           [인스타 스토리 공유용 9:16 캡처 뷰 (화면 밖 렌더링)]

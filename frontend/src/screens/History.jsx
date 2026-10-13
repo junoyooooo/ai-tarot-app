@@ -93,9 +93,11 @@ function Detail({ entry, profile, onBack, onDelete, onChanged }) {
         />
       )}
 
-      <div className="mt-5">
-        <ShareActions name={name} cards={cards} summary={entry.summary} hashtags={entry.hashtags} />
-      </div>
+      {!/자살예방 상담전화 109/.test(entry.reading) && (
+        <div className="mt-5">
+          <ShareActions name={name} cards={cards} summary={entry.summary} hashtags={entry.hashtags} />
+        </div>
+      )}
 
       <div className="mt-6 text-center">
         {confirm ? (

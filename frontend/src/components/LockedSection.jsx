@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Lock } from 'lucide-react';
 import { useWallet } from '../hooks/useWallet';
 import { unlockReading } from '../lib/api';
+import { track } from '../lib/analytics';
 
 /** 세 번째 카드 풀이와 마스터의 한마디가 잠겨 있을 때 보이는 영역. 잠긴 글은 서버가 아직 보내지 않았다. */
 export default function LockedSection({ readingId, titles = [], cost = 1, onUnlocked }) {
@@ -19,6 +20,7 @@ export default function LockedSection({ readingId, titles = [], cost = 1, onUnlo
     try {
       const r = await unlockReading(readingId);
       w.applyWallet(r);
+      track('unlock');
       onUnlocked(r.text);
     } catch (e) {
       if (e.code === 'insufficient_coins') {

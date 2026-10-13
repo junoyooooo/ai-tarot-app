@@ -14,3 +14,8 @@
 주의: sandbox 는 운영에서 절대 켜지 마세요. 위기(109) 응답은 어떤 경우에도 잠기거나 유료가 되지 않습니다.
 개발용: `python backend/dev_fake_llm.py` (API 키 없이 화면 확인), 테스트: `pip install -r backend/requirements-dev.txt && pytest backend`.
 미구현(추후): 카카오 로그인, 친구 초대 코인, 월간 리포트.
+
+## 공유·분석 설정 (프론트엔드, Vercel 환경변수)
+- VITE_SHARE_URL: 공유 이미지 QR·주소·공유 글에 들어가는 앱 주소 (도메인/짧은 주소로 바꾸면 여기만 수정)
+- VITE_UMAMI_WEBSITE_ID, VITE_UMAMI_SRC: Umami 분석 (비우면 꺼짐). 공유로 들어온 방문은 utm_source=share 로 구분돼요.
+- 기록하는 이벤트: consult_start, unlock, checkout_start, share_save, share_native, share_copy_link (개인정보는 보내지 않음)

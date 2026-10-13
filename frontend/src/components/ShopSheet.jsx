@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { X } from 'lucide-react';
 import { useWallet } from '../hooks/useWallet';
 import { prepareCheckout, sandboxConfirm } from '../lib/api';
+import { track } from '../lib/analytics';
 
 const TOSS_SDK = 'https://js.tosspayments.com/v2/standard';
 
@@ -39,6 +40,7 @@ export default function ShopSheet() {
   const buy = async (p) => {
     setError('');
     setBusy(p.sku);
+    track('checkout_start', { sku: p.sku });
     try {
       const order = await prepareCheckout(p.sku);
       if (order.mode === 'sandbox') {

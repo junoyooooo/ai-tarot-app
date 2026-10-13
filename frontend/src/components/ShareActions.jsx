@@ -1,12 +1,15 @@
-import React, { useRef, useState } from 'react';
-import { Camera, Share2, Download, X, Sparkles } from 'lucide-react';
-import html2canvas from 'html2canvas';
+import React, { useEffect, useRef, useState } from 'react';
+import { Camera, Share2, Download, X, Sparkles, Link2, Check } from 'lucide-react';
+import { toCanvas } from 'html-to-image';
+import QRCodeStyling from 'qr-code-styling';
+import { SHARE_LINK, SHARE_DISPLAY, copyText } from '../lib/share';
+import { track } from '../lib/analytics';
 import { getKoName, cleanName } from '../tarotData';
 
 const CAPTURE_BG = '#f4e9ff';
 
-/* 인스타 스토리용 9:16 캡처 뷰 (화면 밖에서 렌더링). html2canvas는 blur 필터를 지원하지 않아서 그라데이션만 씁니다. */
-function ShareCard({ forwardedRef, name, cards, summary, hashtags }) {
+/* 인스타 스토리용 9:16 캡처 뷰 (화면 밖에서 렌더링). 하단에 앱 주소와 QR 코드가 들어갑니다. */
+function ShareCard({ forwardedRef, name, cards, summary, hashtags, qr }) {
   const fan = [
     { t: 'translateX(-84px) translateY(14px) rotate(-12deg)', z: 10 },
     { t: 'translateY(-10px) rotate(0deg)', z: 20 },
@@ -20,7 +23,7 @@ function ShareCard({ forwardedRef, name, cards, summary, hashtags }) {
         height: '800px',
         backgroundImage: 'linear-gradient(170deg, #efe2ff 0%, #ffe4ef 52%, #fff1d9 100%)',
       }}
-      className="relative px-9 py-10 flex flex-col justify-between overflow-hidden font-sans text-ink"
+      className="relative px-9 pt-9 pb-7 flex flex-col justify-between overflow-hidden font-sans text-ink"
     >
       <div className="relative text-center">
         <p className="text-[12px] font-bold tracking-[0.35em] text-brand-600">AI TAROT</p>
@@ -29,7 +32,7 @@ function ShareCard({ forwardedRef, name, cards, summary, hashtags }) {
         </p>
       </div>
 
-      <div className="relative w-full h-[330px] flex items-center justify-center">
+      <div className="relative w-full h-[300px] flex items-center justify-center">
         {cards.length === 3 &&
           cards.map((card, i) => (
             <div
@@ -56,7 +59,22 @@ function ShareCard({ forwardedRef, name, cards, summary, hashtags }) {
         <p style={{ marginTop: 16, fontSize: 15, fontWeight: 700, color: '#6a2fc2', lineHeight: '24px' }}>
           {hashtags.map((tag) => (tag.startsWith('#') ? tag : `#${tag}`)).join('   ')}
         </p>
-        <p className="text-[11px] text-mute/80 mt-6">ai-tarot-app-tau.vercel.app</p>
+      </div>
+
+      <div
+        style={{ background: 'rgba(255,255,255,0.88)', borderRadius: 22, padding: '10px 16px 10px 12px' }}
+        className="relative flex items-center gap-3"
+      >
+        {qr ? (
+          <img src={qr} alt="" style={{ width: 64, height: 64, display: 'block', borderRadius: 8 }} />
+        ) : (
+          <div style={{ width: 64, height: 64 }} />
+        )}
+        <div className="text-left min-w-0">
+          <p style={{ fontSize: 15, fontWeight: 800, color: '#1d1836' }}>나도 타로 보기</p>
+          <p style={{ fontSize: 13, fontWeight: 600, color: '#6a2fc2', marginTop: 2 }}>{SHARE_DISPLAY}</p>
+          <p style={{ fontSize: 11, color: '#6f6a8a', marginTop: 2 }}>QR을 찍거나 주소를 입력해 보세요</p>
+        </div>
       </div>
     </div>
   );
@@ -67,16 +85,67 @@ export default function ShareActions({ name, cards, summary, hashtags }) {
   const shareRef = useRef(null);
   const [isCapturing, setIsCapturing] = useState(false);
   const [previewImg, setPreviewImg] = useState(null);
+  const [qr, setQr] = useState('');
+  const [copied, setCopied] = useState(false);
 
   const displayName = cleanName(name);
   const tags = hashtags && hashtags.length ? hashtags : ['#오늘의타로', '#마음의소리', '#작은위로'];
   const summaryText = summary || `${displayName}님을 기다리는 가장 다정한 전환점`;
   const fileName = `AI타로_${displayName}.png`;
 
+  /* 공유 주소 QR 을 한 번 만들어 이미지(data URL)로 둔다. 캡처할 때 그림으로 들어가 깨질 일이 없다. */
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const code = new QRCodeStyling({
+          width: 256,
+          height: 256,
+          type: 'canvas',
+          data: SHARE_LINK,
+          margin: 0,
+          qrOptions: { errorCorrectionLevel: 'M' },
+          dotsOptions: { color: '#2a1457', type: 'square' },
+          cornersSquareOptions: { color: '#2a1457', type: 'square' },
+          backgroundOptions: { color: '#ffffff' },
+        });
+        const blob = await code.getRawData('png');
+        if (!blob || !alive) return;
+        const reader = new FileReader();
+        reader.onload = () => alive && setQr(String(reader.result));
+        reader.readAsDataURL(blob);
+      } catch {
+        /* QR 을 못 만들어도 주소 문구는 이미지에 들어간다 */
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  const shareText = `${summaryText}\n\n나도 타로 보기 👉 ${SHARE_LINK}`;
+
+  const copyLink = async () => {
+    const ok = await copyText(SHARE_LINK);
+    track('share_copy_link');
+    if (ok) {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2200);
+    }
+    return ok;
+  };
+
   const capture = async () => {
     if (document.fonts?.ready) await document.fonts.ready;
     await new Promise((r) => setTimeout(r, 200));
-    return html2canvas(shareRef.current, { scale: 2, useCORS: true, backgroundColor: CAPTURE_BG, logging: false });
+    const opts = { pixelRatio: 2, backgroundColor: CAPTURE_BG, cacheBust: true };
+    try {
+      return await toCanvas(shareRef.current, opts);
+    } catch (e) {
+      // 웹폰트 CSS 를 못 읽는 환경(네트워크 차단 등)에서도 이미지는 만들어지도록 폰트 내장 없이 다시 시도
+      console.warn('폰트 내장 실패, 기본 글꼴로 다시 만듭니다:', e);
+      return toCanvas(shareRef.current, { ...opts, skipFonts: true });
+    }
   };
 
   const saveCanvas = (canvas) => {
@@ -92,6 +161,7 @@ export default function ShareActions({ name, cards, summary, hashtags }) {
       document.body.removeChild(a);
       setTimeout(() => URL.revokeObjectURL(url), 2000);
     }, 'image/png');
+    copyText(SHARE_LINK); // 스토리 링크 스티커에 바로 붙여 넣을 수 있게 주소를 미리 복사(브라우저가 막으면 버튼으로 복사)
     setPreviewImg(dataUrl); // 모바일은 직접 저장이 막히는 경우가 있어 '꾹 눌러 저장' 안내도 함께 띄움
   };
 
@@ -99,6 +169,7 @@ export default function ShareActions({ name, cards, summary, hashtags }) {
     if (!shareRef.current || isCapturing) return;
     setIsCapturing(true);
     try {
+      track('share_save');
       saveCanvas(await capture());
     } catch (e) {
       console.error('이미지 캡처 실패:', e);
@@ -119,7 +190,8 @@ export default function ShareActions({ name, cards, summary, hashtags }) {
           const file = new File([blob], fileName, { type: 'image/png' });
           if (navigator.canShare({ files: [file] })) {
             try {
-              await navigator.share({ files: [file], title: `${displayName}님의 AI 타로`, text: summaryText });
+              track('share_native');
+              await navigator.share({ files: [file], title: `${displayName}님의 AI 타로`, text: shareText });
               return;
             } catch (err) {
               if (err?.name === 'AbortError') return;
@@ -159,8 +231,17 @@ export default function ShareActions({ name, cards, summary, hashtags }) {
         </button>
       </div>
 
+      <button
+        type="button"
+        onClick={copyLink}
+        className="mt-2.5 w-full flex items-center justify-center gap-1.5 text-[13px] font-semibold text-brand-700 py-2 cursor-pointer"
+      >
+        {copied ? <Check className="w-4 h-4" aria-hidden="true" /> : <Link2 className="w-4 h-4" aria-hidden="true" />}
+        {copied ? '주소를 복사했어요' : `앱 주소 복사 · ${SHARE_DISPLAY}`}
+      </button>
+
       <div className="fixed -left-[9999px] top-0 pointer-events-none" aria-hidden="true">
-        <ShareCard forwardedRef={shareRef} name={displayName} cards={cards} summary={summaryText} hashtags={tags} />
+        <ShareCard forwardedRef={shareRef} name={displayName} cards={cards} summary={summaryText} hashtags={tags} qr={qr} />
       </div>
 
       {previewImg && (
@@ -183,6 +264,19 @@ export default function ShareActions({ name, cards, summary, hashtags }) {
             <p className="text-[12px] text-mute text-center mb-3 leading-relaxed">
               휴대폰에서는 이미지를 <strong className="text-ink">1초간 꾹 누른 뒤</strong> [사진에 저장]을 선택하세요.
             </p>
+            <div className="mb-3 rounded-2xl bg-brand-50 px-3.5 py-3 text-[12.5px] leading-relaxed text-ink/80 break-keep">
+              <b className="text-ink">인스타 스토리에 올릴 때</b>
+              <br />
+              이미지를 올리고 스티커 → <b>링크</b>에 아래 주소를 붙여 넣으면, 친구가 바로 눌러서 들어올 수 있어요.
+              <button
+                type="button"
+                onClick={copyLink}
+                className="mt-2 w-full flex items-center justify-center gap-1.5 rounded-xl bg-white py-2.5 text-[13px] font-bold text-brand-700 cursor-pointer"
+              >
+                {copied ? <Check className="w-4 h-4" aria-hidden="true" /> : <Link2 className="w-4 h-4" aria-hidden="true" />}
+                {copied ? '복사했어요! 링크 스티커에 붙여 넣으세요' : '주소 복사하기'}
+              </button>
+            </div>
             <div className="rounded-2xl overflow-hidden border border-line mb-4 flex justify-center bg-brand-50">
               <img src={previewImg} alt="공유 이미지" className="w-full max-h-[50vh] object-contain" />
             </div>

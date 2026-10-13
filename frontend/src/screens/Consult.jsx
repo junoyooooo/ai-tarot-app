@@ -10,9 +10,12 @@ import useReading from '../hooks/useReading';
 import { CATEGORIES, categoryByKey } from '../lib/categories';
 import { addHistory, updateHistory } from '../lib/storage';
 import { recordCards } from '../lib/collection';
+import { track } from '../lib/analytics';
 import { getKoName, cleanName } from '../tarotData';
 
 const MAX_CONCERN = 450;
+// 위기 안내(109)가 나온 상담에는 공유·홍보 UI 를 보여 주지 않는다.
+const CRISIS_SHOWN = /자살예방 상담전화 109/;
 
 export default function Consult({ profile, seed, onSaved, onGoHistory }) {
   const reading = useReading();
@@ -107,6 +110,7 @@ export default function Consult({ profile, seed, onSaved, onGoHistory }) {
     setFlipped([false, false, false]);
     setRunInfo({ concern: text, category: cat.key });
     setStep('run');
+    track('consult_start', { category: cat.key });
     reading.start({
       name: profile.name,
       birthdate: profile.birthdate,
@@ -336,7 +340,9 @@ export default function Consult({ profile, seed, onSaved, onGoHistory }) {
               )}
 
               <div className="mt-4" />
-              <ShareActions name={name} cards={reading.cards} summary={reading.meta.one_line_summary} hashtags={reading.meta.hashtags} />
+              {!CRISIS_SHOWN.test(reading.reading) && (
+                <ShareActions name={name} cards={reading.cards} summary={reading.meta.one_line_summary} hashtags={reading.meta.hashtags} />
+              )}
 
               <div className="grid grid-cols-2 gap-2.5 mt-2.5">
                 <button type="button" onClick={onGoHistory} className="btn-soft py-3.5 rounded-2xl text-[14px] cursor-pointer">

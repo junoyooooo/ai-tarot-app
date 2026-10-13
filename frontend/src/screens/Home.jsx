@@ -80,7 +80,7 @@ export default function Home({ profile, history, onStartConsult, onOpenEntry, on
         >
           <div className="flex-1 min-w-0">
             <p className="text-[16px] font-extrabold text-white">별똥별 마을</p>
-            <p className="mt-0.5 text-[12.5px] text-white/75 break-keep">별을 받고 마스코트를 꾸며 보세요</p>
+            <p className="mt-0.5 text-[12.5px] text-white/75 break-keep">별을 받고 운명이들을 꾸며 보세요</p>
           </div>
           <Avatar id={look.main} outfit={look.equipped} className="h-[64px] shrink-0" />
         </button>

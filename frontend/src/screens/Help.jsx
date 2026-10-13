@@ -90,7 +90,7 @@ export default function Help({ onBack }) {
           <p>
             <b className="text-ink">그 밖의 기능</b>
             <br />
-            홈에서 하루에 한 장 ‘오늘의 카드’를 뽑을 수 있어요. 상담이 끝나면 조언 카드를 한 장 더 뽑거나, 카드에게 이어서 물어볼 수 있어요. 만난 카드의 마스코트는 내 정보의 도감에 모여요.
+            홈에서 하루에 한 장 ‘오늘의 카드’를 뽑을 수 있어요. 상담이 끝나면 조언 카드를 한 장 더 뽑거나, 카드에게 이어서 물어볼 수 있어요. 만난 카드의 운명이는 내 정보의 도감에 모여요.
           </p>
         </Section>
 
@@ -146,10 +146,10 @@ export default function Help({ onBack }) {
 
         {cfg?.play?.enabled && (
           <Section id="play" title="별똥별 마을·별가루" open={open === 'play'} onToggle={toggle}>
-            <p>별똥별 받기 게임으로 별가루를 모아 마스코트에게 모자·안경·옷·신발을 입혀 줄 수 있어요. 게임은 무료예요.</p>
+            <p>별똥별 받기 게임으로 별가루를 모아 운명이들에게 모자·안경·옷·신발을 입혀 줄 수 있어요. 게임은 무료예요.</p>
             <ul className="mt-2 list-disc pl-5 space-y-1">
               <li>하루 {cfg.play.plays_per_day}판까지 할 수 있고, 하루에 모을 수 있는 별가루는 최대 {cfg.play.daily_stardust}개예요. 점수가 높아도 이 상한은 그대로예요.</li>
-              <li>대표 마스코트는 상담이나 오늘의 카드에서 만난 친구 중에서 고를 수 있어요.</li>
+              <li>대표 운명이는 상담이나 오늘의 카드에서 만난 친구 중에서 고를 수 있어요.</li>
               <li>이미 모자나 안경을 쓰고 있는 친구는 그 칸을 꾸밀 수 없어요.</li>
               {cfg.play.exchange_enabled && <li>별가루 {cfg.play.exchange_cost}개는 코인 1개로 바꿀 수 있어요. 일주일에 한 번만 바꿀 수 있어요.</li>}
               <li>별가루와 아이템은 이 기기에 연결돼요. 브라우저 데이터를 지워도 서버에는 남지만, 다른 기기로는 옮길 수 없어요.</li>

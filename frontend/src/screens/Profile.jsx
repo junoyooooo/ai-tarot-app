@@ -67,8 +67,8 @@ export default function Profile({ profile, historyCount, onProfileChange, onClea
           className="mt-4 w-full flex items-center justify-between rounded-[22px] bg-[#ece4ff] px-5 py-4 text-left cursor-pointer active:scale-[0.99] transition-transform"
         >
           <span>
-            <span className="block text-[15px] font-bold text-ink">마스코트 꾸미기</span>
-            <span className="block text-[12px] text-mute">별똥별 받기, 아이템, 대표 마스코트</span>
+            <span className="block text-[15px] font-bold text-ink">운명이 꾸미기</span>
+            <span className="block text-[12px] text-mute">별똥별 받기, 아이템, 대표 운명이</span>
           </span>
           <ChevronRight className="w-5 h-5 text-ink/40" aria-hidden="true" />
         </button>

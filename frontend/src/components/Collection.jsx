@@ -13,7 +13,7 @@ export default function Collection({ refreshKey = 0 }) {
   return (
     <section className="mt-8">
       <div className="flex items-end justify-between mb-3">
-        <h2 className="text-[19px] font-extrabold text-ink">마스코트 도감</h2>
+        <h2 className="text-[19px] font-extrabold text-ink">운명이 도감</h2>
         <p className="text-[13px] font-bold text-brand-600">
           {found} / {total}
         </p>
@@ -37,7 +37,7 @@ export default function Collection({ refreshKey = 0 }) {
           );
         })}
       </ul>
-      <p className="mt-3 text-[12px] text-mute text-center">상담이나 오늘의 카드에서 만난 카드의 마스코트가 열려요.</p>
+      <p className="mt-3 text-[12px] text-mute text-center">상담이나 오늘의 카드에서 만난 카드의 운명이가 열려요.</p>
     </section>
   );
 }

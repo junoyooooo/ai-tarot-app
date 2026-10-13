@@ -273,7 +273,7 @@ export default function StarGame({ mascotId, outfit, playsLeft, onClose, onResul
             <Avatar id={mascotId} outfit={outfit} className="h-[140px]" bounce />
             <h2 className="mt-6 text-[26px] font-extrabold">별똥별 받기</h2>
             <p className="mt-2 text-[15px] leading-relaxed text-white/85 break-keep">
-              화면을 누르거나 끌어서 마스코트를 움직여요.
+              화면을 누르거나 끌어서 운명이를 움직여요.
               <br />
               ⭐ 별은 +1, 분홍 별은 +3, 먹구름은 −2예요.
             </p>

@@ -121,8 +121,8 @@ export default function Play({ onBack }) {
         <div className="h-[190px] flex items-end">
           <Avatar id={mainId} outfit={data.equipped} className="h-[170px] max-w-[260px]" bounce />
         </div>
-        <p className="mt-3 text-[17px] font-extrabold text-ink">{mainCard ? getKoName(mainCard) : '마스코트'}</p>
-        <p className="text-[12px] text-mute">나의 대표 마스코트</p>
+        <p className="mt-3 text-[17px] font-extrabold text-ink">{mainCard ? getKoName(mainCard) : '운명이'}</p>
+        <p className="text-[12px] text-mute">나의 대표 운명이</p>
       </div>
 
       {/* 별똥별 받기 */}
@@ -215,7 +215,7 @@ export default function Play({ onBack }) {
       )}
 
       {/* 대표 마스코트 */}
-      <h2 className="mt-8 mb-1 text-[19px] font-extrabold text-ink">대표 마스코트</h2>
+      <h2 className="mt-8 mb-1 text-[19px] font-extrabold text-ink">대표 운명이</h2>
       <p className="mb-3 text-[12.5px] text-mute break-keep">상담이나 오늘의 카드에서 만난 친구만 고를 수 있어요.</p>
       <ul className="grid grid-cols-5 gap-2">
         {TAROT_CARDS.map((c) => {

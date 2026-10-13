@@ -272,6 +272,7 @@ export default function StarGame({ mascotId, outfit, playsLeft, onClose, onResul
           <div className="absolute inset-0 flex flex-col items-center justify-center px-8 text-center text-white">
             <Avatar id={mascotId} outfit={outfit} className="h-[140px]" bounce />
             <h2 className="mt-6 text-[26px] font-extrabold">별똥별 받기</h2>
+            <span className="mt-1.5 inline-block text-[12px] font-bold bg-white/15 rounded-full px-3 py-0.5">미니게임</span>
             <p className="mt-2 text-[15px] leading-relaxed text-white/85 break-keep">
               화면을 누르거나 끌어서 운명이를 움직여요.
               <br />
@@ -296,13 +297,15 @@ export default function StarGame({ mascotId, outfit, playsLeft, onClose, onResul
                 <p className="mt-1.5 text-[13px] text-white/75 break-keep">
                   {result.capped && result.gain === 0
                     ? '하루에 모을 수 있는 별가루를 모두 모았어요. 내일 또 만나요!'
+                    : result.earned_today >= result.daily_cap
+                    ? `오늘 별가루를 모두 모았어요 (${result.earned_today}/${result.daily_cap}). 내일 또 만나요! · 지금 ${result.stardust}개`
                     : `오늘 모은 별가루 ${result.earned_today}/${result.daily_cap} · 지금 ${result.stardust}개`}
                 </p>
               </div>
             )}
             {result && !result.ok && <p role="alert" className="mt-5 text-[14px] bg-white/15 rounded-xl px-4 py-2.5 break-keep">{result.message}</p>}
             <div className="mt-7 flex gap-2.5">
-              {result?.ok && result.plays_left > 0 && (
+              {result?.ok && result.plays_left > 0 && result.earned_today < result.daily_cap && (
                 <button type="button" onClick={() => setPhase('ready')} className="px-6 py-3 rounded-2xl bg-white/15 text-white font-bold text-[15px] cursor-pointer">
                   한 번 더 ({result.plays_left})
                 </button>

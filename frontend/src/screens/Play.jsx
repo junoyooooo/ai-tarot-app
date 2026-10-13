@@ -128,18 +128,22 @@ export default function Play({ onBack }) {
       {/* 별똥별 받기 */}
       <div className="mt-4 rounded-[24px] bg-gradient-to-br from-[#2a2465] to-[#5b3a9a] text-white p-5 flex items-center gap-4">
         <div className="flex-1 min-w-0">
-          <p className="text-[17px] font-extrabold">별똥별 받기</p>
+          <p className="text-[17px] font-extrabold">
+            별똥별 받기 <span className="ml-1 align-middle text-[11px] font-bold bg-white/20 rounded-full px-2 py-0.5">미니게임</span>
+          </p>
           <p className="mt-1 text-[12.5px] text-white/75 break-keep">
-            오늘 남은 판 {data.plays_left}번 · 별가루 {data.earned_today}/{data.daily_cap}
+            {data.earned_today >= data.daily_cap
+              ? `오늘 별가루를 모두 모았어요 (${data.earned_today}/${data.daily_cap})`
+              : `오늘 남은 판 ${data.plays_left}번 · 별가루 ${data.earned_today}/${data.daily_cap}`}
           </p>
         </div>
         <button
           type="button"
-          disabled={data.plays_left <= 0}
+          disabled={data.plays_left <= 0 || data.earned_today >= data.daily_cap}
           onClick={() => setGame(true)}
           className="shrink-0 bg-white text-[#3a2a7a] font-extrabold text-[14px] rounded-full px-5 py-2.5 cursor-pointer disabled:opacity-50 active:scale-95 transition-transform"
         >
-          {data.plays_left <= 0 ? '내일 또!' : '놀러 가기'}
+          {data.plays_left <= 0 || data.earned_today >= data.daily_cap ? '내일 또!' : '게임하기'}
         </button>
       </div>
 

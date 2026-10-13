@@ -79,8 +79,10 @@ export default function Home({ profile, history, onStartConsult, onOpenEntry, on
           className="mt-3 w-full rounded-[24px] bg-gradient-to-br from-[#2a2465] to-[#5b3a9a] text-left px-5 py-3.5 flex items-center gap-3 cursor-pointer active:scale-[0.99] transition-transform"
         >
           <div className="flex-1 min-w-0">
-            <p className="text-[16px] font-extrabold text-white">별똥별 마을</p>
-            <p className="mt-0.5 text-[12.5px] text-white/75 break-keep">별을 받고 운명이들을 꾸며 보세요</p>
+            <p className="text-[16px] font-extrabold text-white">
+              별똥별 마을 <span className="ml-1 align-middle text-[11px] font-bold bg-white/20 rounded-full px-2 py-0.5">미니게임</span>
+            </p>
+            <p className="mt-0.5 text-[12.5px] text-white/75 break-keep">게임하고 별가루를 모아 운명이들을 꾸며 보세요</p>
           </div>
           <Avatar id={look.main} outfit={look.equipped} className="h-[64px] shrink-0" />
         </button>

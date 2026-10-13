@@ -3,8 +3,10 @@ import { ChevronLeft, ChevronRight, Trash2 } from 'lucide-react';
 import Mascot from '../components/Mascot';
 import ReadingView from '../components/ReadingView';
 import ShareActions from '../components/ShareActions';
+import LockedSection from '../components/LockedSection';
+import ReadingExtras from '../components/ReadingExtras';
 import { categoryByKey } from '../lib/categories';
-import { removeHistory } from '../lib/storage';
+import { removeHistory, updateHistory } from '../lib/storage';
 import { TAROT_CARDS, getKoName, cleanName } from '../tarotData';
 
 const DOW = ['일', '월', '화', '수', '목', '금', '토'];
@@ -24,7 +26,7 @@ function hydrate(entry) {
 }
 
 /* ------------------------- 상세 보기 ------------------------- */
-function Detail({ entry, profile, onBack, onDelete }) {
+function Detail({ entry, profile, onBack, onDelete, onChanged }) {
   const [confirm, setConfirm] = useState(false);
   const cat = categoryByKey(entry.category);
   const cards = useMemo(() => hydrate(entry), [entry]);
@@ -62,12 +64,40 @@ function Detail({ entry, profile, onBack, onDelete }) {
       </div>
 
       <div className="mt-6">
-        <ReadingView reading={entry.reading} isComplete cards={cards} />
+        <ReadingView
+          reading={entry.reading}
+          isComplete
+          cards={cards}
+          footer={
+            entry.locked && entry.readingId ? (
+              <LockedSection
+                readingId={entry.readingId}
+                titles={entry.lockedTitles}
+                cost={entry.lockedCost || 1}
+                onUnlocked={(text) =>
+                  onChanged(updateHistory(entry.id, { reading: `${entry.reading.trimEnd()}\n\n${text}`, locked: false, lockedTitles: [] }))
+                }
+              />
+            ) : null
+          }
+        />
       </div>
 
-      <div className="mt-5">
-        <ShareActions name={name} cards={cards} summary={entry.summary} hashtags={entry.hashtags} />
-      </div>
+      {!entry.locked && (
+        <ReadingExtras
+          readingId={entry.readingId}
+          advice={entry.advice}
+          followups={entry.followups}
+          onAdvice={(a) => onChanged(updateHistory(entry.id, { advice: a }))}
+          onFollowups={(list) => onChanged(updateHistory(entry.id, { followups: list }))}
+        />
+      )}
+
+      {!/자살예방 상담전화 109/.test(entry.reading) && (
+        <div className="mt-5">
+          <ShareActions name={name} cards={cards} summary={entry.summary} hashtags={entry.hashtags} />
+        </div>
+      )}
 
       <div className="mt-6 text-center">
         {confirm ? (
@@ -103,6 +133,7 @@ export default function History({ profile, history, openId, onOpenChange, onChan
         entry={open}
         profile={profile}
         onBack={() => onOpenChange(null)}
+        onChanged={onChanged}
         onDelete={(id) => {
           onChanged(removeHistory(id));
           onOpenChange(null);
@@ -209,7 +240,10 @@ export default function History({ profile, history, openId, onOpenChange, onChan
                     <p className="text-[12px] font-bold text-ink/60">
                       {fmt(e.ts)} · {cat.label}
                     </p>
-                    <p className="text-[14.5px] font-bold text-ink truncate">{e.summary || e.concern}</p>
+                    <p className="text-[14.5px] font-bold text-ink truncate">
+                      {e.locked && <span aria-label="잠긴 풀이가 있어요">🔒 </span>}
+                      {e.summary || e.concern}
+                    </p>
                   </div>
                   <ChevronRight className="w-5 h-5 text-ink/40 shrink-0" aria-hidden="true" />
                 </button>

@@ -33,6 +33,12 @@ export function addHistory(entry) {
   return list;
 }
 
+export function updateHistory(id, patch) {
+  const list = getHistory().map((e) => (e.id === id ? { ...e, ...patch } : e));
+  write('history', list);
+  return list;
+}
+
 export function removeHistory(id) {
   const list = getHistory().filter((e) => e.id !== id);
   write('history', list);
@@ -44,7 +50,8 @@ export const saveDaily = (daily) => write('daily', daily);
 
 export function clearAll() {
   try {
-    ['profile', 'history', 'daily'].forEach((k) => window.localStorage.removeItem(PREFIX + k));
+    ['profile', 'history', 'daily', 'collection'].forEach((k) => window.localStorage.removeItem(PREFIX + k));
+    // 기기 ID(device)는 코인과 연결돼 있어 일부러 지우지 않습니다.
   } catch {
     /* 무시 */
   }

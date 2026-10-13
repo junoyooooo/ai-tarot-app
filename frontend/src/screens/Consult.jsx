@@ -4,16 +4,23 @@ import Mascot from '../components/Mascot';
 import CardFlip from '../components/CardFlip';
 import ReadingView from '../components/ReadingView';
 import ShareActions from '../components/ShareActions';
+import LockedSection from '../components/LockedSection';
+import ReadingExtras from '../components/ReadingExtras';
 import useReading from '../hooks/useReading';
-import { CATEGORIES, categoryByKey } from '../lib/categories';
-import { addHistory } from '../lib/storage';
+import CardPicker from '../components/CardPicker';
+import { CATEGORIES, categoryByKey, SPREAD_LABELS } from '../lib/categories';
+import { addHistory, updateHistory } from '../lib/storage';
+import { recordCards } from '../lib/collection';
+import { track } from '../lib/analytics';
 import { getKoName, cleanName } from '../tarotData';
 
 const MAX_CONCERN = 450;
+// 위기 안내(109)가 나온 상담에는 공유·홍보 UI 를 보여 주지 않는다.
+const CRISIS_SHOWN = /자살예방 상담전화 109/;
 
 export default function Consult({ profile, seed, onSaved, onGoHistory }) {
   const reading = useReading();
-  const [step, setStep] = useState('category'); // category → write → run
+  const [step, setStep] = useState('category'); // category → write → pick → run
   const [category, setCategory] = useState(null);
   const [concern, setConcern] = useState('');
   const [error, setError] = useState('');
@@ -21,6 +28,9 @@ export default function Consult({ profile, seed, onSaved, onGoHistory }) {
   const [runInfo, setRunInfo] = useState({ concern: '', category: 'etc' });
   const readingRef = useRef(null);
   const savedRef = useRef(false);
+  const entryIdRef = useRef(null);
+  const [advice, setAdvice] = useState(null);
+  const [followups, setFollowups] = useState([]);
   const topRef = useRef(null);
 
   /* 홈에서 분야를 골라 들어오면 그 단계부터 시작 */
@@ -52,8 +62,11 @@ export default function Consult({ profile, seed, onSaved, onGoHistory }) {
   useEffect(() => {
     if (!reading.isComplete || savedRef.current || reading.cards.length !== 3 || !reading.reading) return;
     savedRef.current = true;
+    const entryId = String(Date.now());
+    entryIdRef.current = entryId;
+    recordCards(reading.cards.map((c) => c.id));
     const entry = {
-      id: String(Date.now()),
+      id: entryId,
       ts: Date.now(),
       category: runInfo.category,
       concern: runInfo.concern,
@@ -61,10 +74,24 @@ export default function Consult({ profile, seed, onSaved, onGoHistory }) {
       reading: reading.reading,
       summary: reading.meta.one_line_summary,
       hashtags: reading.meta.hashtags,
+      readingId: reading.readingId,
+      locked: Boolean(reading.locked),
+      lockedTitles: reading.locked?.titles || [],
+      lockedCost: reading.locked?.cost || 1,
     };
     onSaved(addHistory(entry));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reading.isComplete]);
+
+  const persist = (patch) => {
+    if (entryIdRef.current) onSaved(updateHistory(entryIdRef.current, patch));
+  };
+
+  const handleUnlocked = (text) => {
+    const full = `${reading.reading.trimEnd()}\n\n${text}`;
+    reading.applyUnlock(text);
+    persist({ reading: full, locked: false, lockedTitles: [] });
+  };
 
   const name = cleanName(profile.name);
   const cat = categoryByKey(category);
@@ -78,14 +105,23 @@ export default function Consult({ profile, seed, onSaved, onGoHistory }) {
     }
     setError('');
     savedRef.current = false;
+    entryIdRef.current = null;
+    setAdvice(null);
+    setFollowups([]);
     setFlipped([false, false, false]);
     setRunInfo({ concern: text, category: cat.key });
-    setStep('run');
-    reading.start({
-      name: profile.name,
-      birthdate: profile.birthdate,
-      concern: `(${cat.label} 고민) ${text}`.slice(0, 500),
-    });
+    setStep('pick');
+    track('consult_start', { category: cat.key });
+    // 카드를 고르는 동안 서버에 미리 요청해 두고, 다 고르면 글자 출력을 시작한다.
+    reading.start(
+      {
+        name: profile.name,
+        birthdate: profile.birthdate,
+        concern: text.slice(0, 500),
+        category: cat.key,
+      },
+      { hold: true }
+    );
     topRef.current?.scrollIntoView({ block: 'start' });
   };
 
@@ -189,7 +225,47 @@ export default function Consult({ profile, seed, onSaved, onGoHistory }) {
     );
   }
 
-  /* ---------------------------- 3. 로딩 ---------------------------- */
+  /* ---------------------------- 하루 이용 한도 안내 ---------------------------- */
+  if (step !== 'category' && step !== 'write' && reading.limit) {
+    return (
+      <div ref={topRef} className="min-h-[80dvh] px-8 flex flex-col items-center justify-center text-center animate-fade-in-up" role="status">
+        <Mascot id={cat.mascot} className="w-24 h-28" />
+        <h1 className="mt-5 text-[20px] font-extrabold text-ink break-keep">
+          {reading.limit.scope === 'global' ? '오늘은 상담이 마감됐어요' : '오늘 상담을 모두 마쳤어요'}
+        </h1>
+        <p className="mt-2 text-[14px] leading-relaxed text-mute break-keep">{reading.limit.message}</p>
+        <div className="mt-6 grid grid-cols-2 gap-2.5 w-full max-w-[320px]">
+          <button type="button" onClick={onGoHistory} className="btn-soft py-3.5 rounded-2xl text-[14px] cursor-pointer">
+            기록 보기
+          </button>
+          <button type="button" onClick={restart} className="btn-primary py-3.5 rounded-2xl text-[14px] cursor-pointer">
+            돌아가기
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  /* ---------------------------- 3. 카드 고르기 ---------------------------- */
+  if (step === 'pick') {
+    return (
+      <div ref={topRef}>
+        <CardPicker
+          slots={SPREAD_LABELS[cat.key] || SPREAD_LABELS.etc}
+          onComplete={() => {
+            setStep('run');
+            reading.resume();
+            window.scrollTo({ top: 0 });
+          }}
+        />
+        <button type="button" onClick={restart} className="mx-auto -mt-20 mb-24 flex items-center gap-1.5 text-[13px] font-semibold text-mute cursor-pointer">
+          <RefreshCw className="w-3.5 h-3.5" aria-hidden="true" /> 처음부터 다시
+        </button>
+      </div>
+    );
+  }
+
+  /* ---------------------------- 4. 로딩 ---------------------------- */
   if (reading.isLoading) {
     return (
       <div ref={topRef} className="min-h-[80dvh] px-8 flex flex-col items-center justify-center text-center animate-fade-in-up" role="status" aria-live="polite">
@@ -205,7 +281,7 @@ export default function Consult({ profile, seed, onSaved, onGoHistory }) {
     );
   }
 
-  /* ---------------------------- 4. 카드 + 리딩 ---------------------------- */
+  /* ---------------------------- 5. 카드 + 리딩 ---------------------------- */
   const showSkip = !reading.isComplete && reading.reading.length > 0;
   const summaryText = reading.meta.one_line_summary || `${name}님을 기다리는 가장 다정한 전환점`;
   const tags = reading.meta.hashtags?.length ? reading.meta.hashtags : ['#오늘의타로', '#마음의소리', '#작은위로'];
@@ -222,6 +298,7 @@ export default function Consult({ profile, seed, onSaved, onGoHistory }) {
         {!allFlipped && (
           <button
             type="button"
+            data-sfx="flip"
             onClick={() => setFlipped([true, true, true])}
             className="btn-soft shrink-0 text-[13px] px-3.5 py-2 rounded-full cursor-pointer"
           >
@@ -262,7 +339,21 @@ export default function Consult({ profile, seed, onSaved, onGoHistory }) {
             )}
           </div>
 
-          <ReadingView reading={reading.reading} isComplete={reading.isComplete} cards={reading.cards} />
+          <ReadingView
+            reading={reading.reading}
+            isComplete={reading.isComplete}
+            cards={reading.cards}
+            footer={
+              reading.isComplete && reading.locked && reading.readingId ? (
+                <LockedSection
+                  readingId={reading.readingId}
+                  titles={reading.locked.titles}
+                  cost={reading.locked.cost}
+                  onUnlocked={handleUnlocked}
+                />
+              ) : null
+            }
+          />
 
           {reading.isComplete && (
             <div className="mt-5 animate-fade-in-up">
@@ -278,7 +369,26 @@ export default function Consult({ profile, seed, onSaved, onGoHistory }) {
                 </div>
               </div>
 
-              <ShareActions name={name} cards={reading.cards} summary={reading.meta.one_line_summary} hashtags={reading.meta.hashtags} />
+              {!reading.locked && (
+                <ReadingExtras
+                  readingId={reading.readingId}
+                  advice={advice}
+                  followups={followups}
+                  onAdvice={(a) => {
+                    setAdvice(a);
+                    persist({ advice: a });
+                  }}
+                  onFollowups={(list) => {
+                    setFollowups(list);
+                    persist({ followups: list });
+                  }}
+                />
+              )}
+
+              <div className="mt-4" />
+              {!CRISIS_SHOWN.test(reading.reading) && (
+                <ShareActions name={name} cards={reading.cards} summary={reading.meta.one_line_summary} hashtags={reading.meta.hashtags} />
+              )}
 
               <div className="grid grid-cols-2 gap-2.5 mt-2.5">
                 <button type="button" onClick={onGoHistory} className="btn-soft py-3.5 rounded-2xl text-[14px] cursor-pointer">

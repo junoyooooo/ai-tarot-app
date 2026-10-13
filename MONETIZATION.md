@@ -1,0 +1,54 @@
+# 수익화 기능 가이드
+
+모든 기능은 기본이 **꺼짐(전부 무료)** 입니다. 서버(Render) 환경변수로 켭니다.
+
+| 변수 | 값 | 설명 |
+|---|---|---|
+| PAYWALL_ENABLED | true | 세 번째 카드 + 마스터의 한마디를 코인으로 잠금, 코인/상점 UI 표시 |
+| PAYMENTS_MODE | off / sandbox / toss | off: "결제 준비 중" / sandbox: 가짜 결제(테스트 전용) / toss: 토스페이먼츠 |
+| TOSS_CLIENT_KEY, TOSS_SECRET_KEY | 토스 키 | toss 모드에서 필요 |
+| DB_PATH | 예: /var/data/tarot.db | 영구 디스크 필수 (Render 무료는 재시작 시 코인 소실) |
+| GEMINI_MODEL_PREMIUM | 예: gemini-2.5-pro | 조언 카드·후속 질문에 쓸 모델 |
+| UNLOCK_COST / ADVICE_COST / FOLLOWUP_COST / FOLLOWUP_MAX / WELCOME_COINS | 숫자 | 기본 1/1/1/3/1 |
+
+주의: sandbox 는 운영에서 절대 켜지 마세요. 위기(109) 응답은 어떤 경우에도 잠기거나 유료가 되지 않습니다.
+개발용: `python backend/dev_fake_llm.py` (API 키 없이 화면 확인), 테스트: `pip install -r backend/requirements-dev.txt && pytest backend`.
+미구현(추후): 카카오 로그인, 친구 초대 코인, 월간 리포트.
+
+## 공유·분석 설정 (프론트엔드, Vercel 환경변수)
+- VITE_SHARE_URL: 공유 이미지 QR·주소·공유 글에 들어가는 앱 주소 (도메인/짧은 주소로 바꾸면 여기만 수정)
+- VITE_UMAMI_WEBSITE_ID, VITE_UMAMI_SRC: Umami 분석 (비우면 꺼짐). 공유로 들어온 방문은 utm_source=share 로 구분돼요.
+- 기록하는 이벤트: consult_start, unlock, checkout_start, share_save, share_native, share_copy_link (개인정보는 보내지 않음)
+
+## 사업자 정보 (Vercel 환경변수, 도움말 > 사업자 정보에 표시)
+VITE_BIZ_NAME, VITE_BIZ_REP, VITE_BIZ_REG_NO, VITE_BIZ_ECOMM_NO, VITE_BIZ_ADDRESS, VITE_BIZ_EMAIL, VITE_BIZ_PHONE
+비워 두면 '준비 중'으로 보여요. 이용약관·환불 규정(frontend/src/screens/Help.jsx)은 초안이니 결제를 열기 전에 꼭 검토해 주세요.
+
+## 하루 이용 한도 (Render 환경변수, 한국시간 자정 초기화)
+| 변수 | 기본 | 설명 |
+|---|---|---|
+| LIMITS_ENABLED | true | false 면 한도 전체 해제 |
+| LIMIT_READING_FREE | 3 | 코인을 쓴 적 없는 기기의 하루 상담 수 |
+| LIMIT_READING_PAID | 10 | 코인을 충전한 적 있는 기기의 하루 상담 수 |
+| LIMIT_EXTRA_FREE / LIMIT_EXTRA_PAID | 6 / 20 | 하루 조언 카드+후속 질문 합계 |
+| LIMIT_GLOBAL_READINGS | 3000 | 서비스 전체 하루 상담 수 (비용 안전장치) |
+한도에 걸리면 코인은 차감되지 않고, 생성 실패 시 횟수도 돌려줘요. 이미 한 상담의 잠금 해제와 위기(109) 응답은 한도와 무관해요.
+
+## 별똥별 마을 (미니게임·별가루·꾸미기)
+| 변수 | 기본 | 설명 |
+|---|---|---|
+| PLAY_ENABLED | true | false 면 게임·꾸미기 숨김 |
+| PLAY_PLAYS_PER_DAY | 3 | 하루 판 수 |
+| PLAY_DAILY_STARDUST | 6 | 하루 별가루 상한 (점수와 무관) |
+| PLAY_MIN_SECONDS | 15 | 한 판이 최소 이 시간 이상이어야 정산 |
+| PLAY_EXCHANGE_COST | 30 | 별가루 → 코인 1개 교환 비용 (결제 기능이 켜졌을 때만, 기기당 주 1회) |
+| PLAY_EXCHANGE_PER_IP_WEEKLY | 2 | 같은 네트워크에서 주당 교환 가능 횟수 |
+- 아이템 목록·가격: backend/play.py, 그림: frontend/src/lib/items.jsx (같은 id), 마스코트별 착용 위치: frontend/src/lib/mascotAnchors.js
+- 새 마스코트 그림을 바꾸면 mascotAnchors.js 의 좌표도 다시 맞춰 주세요.
+- 비용: 게임·아이템은 AI 호출이 없어 0원이에요. 코인으로 바뀌는 건 주 1회 상담 1회분(약 8원)이 최대예요.
+
+## 카카오 로그인
+- Render 환경변수: `KAKAO_REST_API_KEY`(필수, 비어 있으면 로그인 버튼이 안 보여요), `KAKAO_CLIENT_SECRET`(카카오에서 클라이언트 시크릿을 켠 경우).
+- 리다이렉트 URI는 카카오 콘솔에 `https://<프론트 주소>/` 를 등록하세요. 서버는 `ALLOWED_ORIGINS`(또는 `KAKAO_REDIRECT_URIS`)에 있는 주소만 받아요.
+- 로그인하면 카카오 회원번호가 기기 ID(코인·별가루가 묶인 키)에 연결돼요. 다른 기기에서 같은 회원이 로그인하면 처음 기기의 ID를 받아 같은 기록을 이어 써요. 상담 기록(풀이 내용)은 기기에만 저장돼요.
+- 계정 표(`accounts`)도 SQLite라, 영구 디스크나 외부 DB로 옮기기 전에는 서버 재시작 때 연결이 사라질 수 있어요.

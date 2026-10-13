@@ -1,13 +1,31 @@
 import React, { useState } from 'react';
-import Mascot from '../components/Mascot';
+import { ChevronRight } from 'lucide-react';
+import Avatar from '../components/Avatar';
+import { useLook } from '../lib/look';
+import Collection from '../components/Collection';
+import CoinChip from '../components/CoinChip';
+import { useWallet } from '../hooks/useWallet';
+import { getAccount, logoutAccount, startKakaoLogin } from '../lib/auth';
+import { getSettings, setSetting, playSfx } from '../lib/sound';
 import { saveProfile, validateBirthdate, clearAll } from '../lib/storage';
 import { cleanName } from '../tarotData';
 
-export default function Profile({ profile, historyCount, onProfileChange, onCleared }) {
+export default function Profile({ profile, historyCount, onProfileChange, onCleared, onOpenHelp, onOpenPlay }) {
+  const look = useLook();
   const [form, setForm] = useState({ name: profile.name, birthdate: profile.birthdate });
   const [error, setError] = useState('');
   const [saved, setSaved] = useState(false);
   const [confirmClear, setConfirmClear] = useState(false);
+  const wallet = useWallet();
+  const [prefs, setPrefs] = useState(() => getSettings());
+  const toggle = (key) => {
+    const next = setSetting(key, !prefs[key]);
+    setPrefs(next);
+    if (next[key]) playSfx(key === 'sound' ? 'pick' : 'tap');
+  };
+
+  const [account, setAccount] = useState(() => getAccount());
+  const kakao = wallet?.config?.auth?.kakao;
 
   const dirty = form.name.trim() !== profile.name || form.birthdate !== profile.birthdate;
 
@@ -29,14 +47,114 @@ export default function Profile({ profile, historyCount, onProfileChange, onClea
       <h1 className="text-[26px] font-extrabold tracking-tight text-ink">내 정보</h1>
 
       <div className="mt-5 flex flex-col items-center rounded-[28px] bg-gradient-to-br from-[#ece4ff] to-[#d6e7ff] py-7">
-        <div className="w-24 h-24 rounded-full bg-white flex items-center justify-center shadow-soft">
-          <Mascot id={0} className="w-16 h-[72px]" />
+        <div className="w-28 h-28 rounded-full bg-white flex items-end justify-center pb-3 shadow-soft">
+          <Avatar id={look.main} outfit={look.equipped} className="h-[78px]" />
         </div>
         <p className="mt-3 text-[20px] font-extrabold text-ink">{cleanName(profile.name)}님</p>
         <p className="mt-0.5 text-[13px] text-mute">지금까지 {historyCount}번 상담했어요</p>
       </div>
 
-      <form onSubmit={submit} noValidate className="mt-6 space-y-4">
+      {(account || kakao?.enabled) && (
+        <div className="mt-4 rounded-[22px] bg-white shadow-soft px-5 py-4">
+          {account ? (
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-[14px] font-bold text-ink truncate">카카오로 로그인됨{account.nickname ? ` · ${account.nickname}` : ''}</p>
+                <p className="text-[12px] text-mute break-keep">다른 기기에서 로그인하면 코인과 별가루가 그대로 이어져요.</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  logoutAccount();
+                  setAccount(null);
+                }}
+                className="shrink-0 text-[13px] font-semibold text-mute underline"
+              >
+                로그아웃
+              </button>
+            </div>
+          ) : (
+            <>
+              <button
+                type="button"
+                onClick={() => startKakaoLogin(kakao.client_id)}
+                className="w-full rounded-2xl bg-[#FEE500] py-3.5 text-[15px] font-bold text-[#191919]"
+              >
+                카카오로 시작하기
+              </button>
+              <p className="mt-2 text-[12px] text-mute text-center break-keep">로그인하면 코인·별가루·꾸미기가 다른 기기에서도 이어져요. 상담 기록은 이 기기에만 저장돼요.</p>
+            </>
+          )}
+        </div>
+      )}
+
+      {wallet?.enabled && (
+        <div className="mt-4 flex items-center justify-between rounded-[22px] bg-gold-200/40 px-5 py-3.5">
+          <div>
+            <p className="text-[13px] font-bold text-[#7a5a14]">보유 코인</p>
+            <p className="text-[12px] text-mute">풀이 열기·조언 카드·더 물어보기에 써요</p>
+          </div>
+          <CoinChip />
+        </div>
+      )}
+
+      {wallet?.config?.play?.enabled && (
+        <button
+          type="button"
+          onClick={onOpenPlay}
+          className="mt-4 w-full flex items-center justify-between rounded-[22px] bg-[#ece4ff] px-5 py-4 text-left cursor-pointer active:scale-[0.99] transition-transform"
+        >
+          <span>
+            <span className="block text-[15px] font-bold text-ink">운명이 꾸미기</span>
+            <span className="block text-[12px] text-mute">별똥별 받기, 아이템, 대표 운명이</span>
+          </span>
+          <ChevronRight className="w-5 h-5 text-ink/40" aria-hidden="true" />
+        </button>
+      )}
+
+      <button
+        type="button"
+        onClick={onOpenHelp}
+        className="mt-4 w-full flex items-center justify-between rounded-[22px] bg-brand-50 px-5 py-4 text-left cursor-pointer active:scale-[0.99] transition-transform"
+      >
+        <span>
+          <span className="block text-[15px] font-bold text-ink">도움말·이용안내</span>
+          <span className="block text-[12px] text-mute">사용법, 코인과 요금, 약관, 환불 규정</span>
+        </span>
+        <ChevronRight className="w-5 h-5 text-ink/40" aria-hidden="true" />
+      </button>
+
+      <Collection />
+
+      <section className="mt-8">
+        <h2 className="text-[19px] font-extrabold text-ink mb-3">소리와 진동</h2>
+        <ul className="rounded-[22px] bg-brand-50 divide-y divide-brand-100 overflow-hidden">
+          {[
+            ['sound', '효과음', '카드를 고르고 뒤집을 때 소리가 나요'],
+            ['haptic', '진동', '카드를 고를 때 살짝 진동해요 (지원하는 기기만)'],
+          ].map(([key, label, desc]) => (
+            <li key={key} className="flex items-center justify-between gap-3 px-5 py-3.5">
+              <div className="min-w-0">
+                <p className="text-[15px] font-bold text-ink">{label}</p>
+                <p className="text-[12px] text-mute break-keep">{desc}</p>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={prefs[key]}
+                aria-label={label}
+                data-sfx="none"
+                onClick={() => toggle(key)}
+                className={`relative shrink-0 w-12 h-7 rounded-full transition-colors cursor-pointer ${prefs[key] ? 'bg-brand-500' : 'bg-[#cfc9e0]'}`}
+              >
+                <span className={`absolute top-0.5 left-0.5 w-6 h-6 rounded-full bg-white shadow transition-transform ${prefs[key] ? 'translate-x-5' : ''}`} />
+              </button>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <form onSubmit={submit} noValidate className="mt-8 space-y-4">
         <div>
           <label htmlFor="pf-name" className="block text-[13px] font-semibold text-ink mb-1.5 pl-1">
             이름 (또는 별명)
@@ -83,7 +201,7 @@ export default function Profile({ profile, historyCount, onProfileChange, onClea
       <div className="mt-8 rounded-[24px] bg-brand-50 px-5 py-4">
         <p className="text-[14px] font-bold text-ink">데이터 안내</p>
         <p className="mt-1.5 text-[13px] leading-relaxed text-mute break-keep">
-          프로필과 상담 기록은 이 기기의 브라우저에만 저장돼요. 리딩을 만들 때 이름, 생년월일, 고민 내용이 AI 서버로 전달돼요. 브라우저 데이터를 지우면 기록도 사라져요.
+          프로필과 상담 기록은 이 기기의 브라우저에만 저장돼요. 리딩을 만들 때 이름, 생년월일, 고민 내용이 AI 서버로 전달돼요. 브라우저 데이터를 지우면 기록도 사라져요.{wallet?.enabled ? ' 코인은 ‘내 데이터 모두 삭제’를 눌러도 지워지지 않아요.' : ''}
         </p>
       </div>
 

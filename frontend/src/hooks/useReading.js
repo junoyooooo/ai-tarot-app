@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { pickThreeCards, generateLocalReading } from '../tarotData';
+import { API_BASE, deviceHeaders } from '../lib/api';
+import { CATEGORIES } from '../lib/categories';
 
-export const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://ai-tarot-app-tznp.onrender.com';
+export { API_BASE };
 const FIRST_BYTE_TIMEOUT_MS = 20000; // 서버가 첫 응답을 줄 때까지 기다리는 시간
 const IDLE_TIMEOUT_MS = 25000; // 응답이 시작된 뒤 데이터가 끊긴 채로 기다리는 최대 시간
 const MIN_USABLE_CHARS = 200; // 이보다 적게 받고 끊기면 자체 해석 엔진으로 대체
@@ -25,6 +27,9 @@ export default function useReading() {
   const [reading, setReading] = useState('');
   const [meta, setMeta] = useState({ one_line_summary: '', hashtags: [] });
   const [isComplete, setIsComplete] = useState(false);
+  const [readingId, setReadingId] = useState(null); // 서버가 저장한 리딩 ID (자체 해석 엔진으로 전환되면 null)
+  const [limit, setLimit] = useState(null); // 하루 이용 한도에 닿았을 때 { scope, message }
+  const [locked, setLocked] = useState(null); // { titles, cost } 잠긴 구간이 있을 때
 
   const pendingRef = useRef('');
   const drainTimerRef = useRef(null);
@@ -33,6 +38,7 @@ export default function useReading() {
   const receivedLenRef = useRef(0);
   const runIdRef = useRef(0);
   const abortRef = useRef(null);
+  const pausedRef = useRef(false); // 카드를 고르는 동안 글자 출력을 잠시 멈춘다
 
   /* 서버 미리 깨우기 (무료 호스팅은 잠들어 있는 경우가 많음) */
   useEffect(() => {
@@ -79,6 +85,10 @@ export default function useReading() {
     let last = Date.now();
     drainTimerRef.current = setInterval(() => {
       const now = Date.now();
+      if (pausedRef.current) {
+        last = now;
+        return;
+      }
       const dt = now - last; // 탭이 백그라운드여서 타이머가 늦어져도 경과 시간만큼 보정
       last = now;
       const pending = pendingRef.current;
@@ -129,6 +139,9 @@ export default function useReading() {
     setReading('');
     setIsComplete(false);
     setMeta({ one_line_summary: '', hashtags: [] });
+    setReadingId(null);
+    setLocked(null);
+    setLimit(null);
   };
 
   const skip = useCallback(() => {
@@ -140,7 +153,9 @@ export default function useReading() {
   /* ---------------- 자체 해석 엔진 ---------------- */
   const runFallback = (payload, existingCards) => {
     const selected = existingCards && existingCards.length === 3 ? existingCards : pickThreeCards();
-    const result = generateLocalReading(payload.name, payload.birthdate, payload.concern, selected);
+    const label = CATEGORIES.find((c) => c.key === payload.category)?.label;
+    const concern = label ? `(${label} 고민) ${payload.concern}`.slice(0, 500) : payload.concern;
+    const result = generateLocalReading(payload.name, payload.birthdate, concern, selected);
     resetReadingState();
     setCards(result.cards);
     setIsLoading(false);
@@ -150,7 +165,8 @@ export default function useReading() {
   };
 
   /* ---------------- 시작 / 초기화 ---------------- */
-  const start = async (payload) => {
+  const start = async (payload, { hold = false } = {}) => {
+    pausedRef.current = hold;
     const runId = ++runIdRef.current;
     abortRef.current?.abort();
     resetReadingState();
@@ -171,11 +187,30 @@ export default function useReading() {
     try {
       const response = await fetch(`${API_BASE}/api/tarot/reading/stream`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...deviceHeaders() },
         body: JSON.stringify(payload),
         signal: controller.signal,
       });
-      if (!response.ok) throw new Error(`서버 응답 오류 (${response.status})`);
+      if (!response.ok) {
+        // 하루 이용 한도: 안내를 보여 주고 끝낸다(자체 해석 엔진으로 우회하지 않는다)
+        if (response.status === 429) {
+          let detail = null;
+          try {
+            detail = (await response.json()).detail;
+          } catch {
+            /* 본문 없음 */
+          }
+          if (detail && detail.code === 'daily_limit') {
+            clearTimeout(timeoutId);
+            if (runId === runIdRef.current) {
+              setLimit({ scope: detail.scope, message: detail.message });
+              setIsLoading(false);
+            }
+            return;
+          }
+        }
+        throw new Error(`서버 응답 오류 (${response.status})`);
+      }
       rearm();
 
       const reader = response.body.getReader();
@@ -213,6 +248,7 @@ export default function useReading() {
               // 서버가 준 이미지 경로 대신 프론트에 있는 카드 이미지를 항상 사용
               receivedCards = parsed.data.map((c) => ({ ...c, image_url: `/tarot/card_${c.id}.webp` }));
               setCards(receivedCards);
+              setReadingId(parsed.reading_id || null);
               setIsLoading(false);
             } else if (parsed.type === 'content') {
               enqueueText(parsed.data);
@@ -221,6 +257,8 @@ export default function useReading() {
                 one_line_summary: parsed.data.one_line_summary || '',
                 hashtags: parsed.data.hashtags || [],
               });
+            } else if (parsed.type === 'locked') {
+              setLocked({ titles: parsed.data.titles || [], cost: parsed.data.cost || 1 });
             } else if (parsed.type === 'done') {
               finished = true;
               markStreamDone();
@@ -245,7 +283,21 @@ export default function useReading() {
     }
   };
 
+  /* 잠금 해제로 받은 나머지 풀이를 이어 붙인다. (스트리밍이 끝난 뒤에만 호출됨) */
+  const applyUnlock = useCallback((text) => {
+    setReading((prev) => `${prev.trimEnd()}\n\n${text}`);
+    setLocked(null);
+  }, []);
+
+  /* 카드를 다 고른 뒤 호출: 멈춰 둔 글자 출력을 시작한다 */
+  const resume = useCallback(() => {
+    pausedRef.current = false;
+    startDrain();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const reset = useCallback(() => {
+    pausedRef.current = false;
     runIdRef.current += 1;
     abortRef.current?.abort();
     resetReadingState();
@@ -254,5 +306,5 @@ export default function useReading() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  return { isLoading, loadingText, loadingSlow, cards, reading, meta, isComplete, start, skip, reset };
+  return { isLoading, loadingText, loadingSlow, cards, reading, meta, isComplete, readingId, locked, limit, start, skip, reset, resume, applyUnlock };
 }

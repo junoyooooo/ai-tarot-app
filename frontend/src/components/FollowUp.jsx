@@ -11,24 +11,26 @@ export default function FollowUp({ readingId, items = [], onChange }) {
   const w = useWallet();
   const cost = w?.config?.costs?.followup ?? 1;
   const max = w?.config?.followup_max ?? 3;
+  const free = w?.config?.followup_free ?? 0;
   const paid = Boolean(w?.enabled);
   const [q, setQ] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const left = Math.max(0, max - items.length);
+  const nextFree = items.length < free; // 이 상담에서 아직 무료 질문이 남았는지
 
   const send = async (text) => {
     const question = text.trim();
     if (question.length < 2 || busy) return;
     setError('');
-    if (paid && (w.coins ?? 0) < cost) {
+    if (paid && !nextFree && (w.coins ?? 0) < cost) {
       w.openShop();
       return;
     }
     setBusy(true);
     try {
       const r = await askFollowup(readingId, question);
-      if (paid) w.applyWallet(r);
+      if (paid && r.charged) w.applyWallet(r);
       playSfx('pick');
       onChange([...items, { q: question, a: r.answer }]);
       setQ('');
@@ -46,7 +48,7 @@ export default function FollowUp({ readingId, items = [], onChange }) {
     <section className="rounded-[28px] bg-[#e6f4ff] p-5">
       <p className="text-[16px] font-extrabold text-ink">카드에게 더 물어보기</p>
       <p className="mt-1 text-[13px] text-ink/70 break-keep">
-        풀이를 읽고 더 궁금한 게 있나요?{paid ? ` 질문 1개에 🪙 ${cost}개,` : ''} 이 상담에서 {left}번 더 물어볼 수 있어요.
+        풀이를 읽고 더 궁금한 게 있나요?{paid ? (nextFree ? ' 이번 질문은 무료예요,' : ` 질문 1개에 🪙 ${cost}개,`) : ''} 이 상담에서 {left}번 더 물어볼 수 있어요.
       </p>
 
       {items.length > 0 && (

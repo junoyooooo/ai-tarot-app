@@ -13,10 +13,13 @@ import { addHistory, updateHistory, boxable } from '../lib/storage';
 import { flyToCardBox } from '../lib/boxFly';
 import { recordCards } from '../lib/collection';
 import { track } from '../lib/analytics';
-import { getKoName, cleanName } from '../tarotData';
+import { getKoName, cleanName, TAROT_CARDS } from '../tarotData';
 
 const MAX_CONCERN = 450;
 // 위기 안내(109)가 나온 상담에는 공유·홍보 UI 를 보여 주지 않는다.
+// 카드의 기본 의미를 앞의 키워드 3개까지만 짧게 보여준다.
+const shortMeaning = (m = '') => m.split(',').map((x) => x.trim()).filter(Boolean).slice(0, 3).join(' · ');
+
 const CRISIS_SHOWN = /자살예방 상담전화 109/;
 
 export default function Consult({ profile, seed, onSaved, onGoHistory, onGoCardBox }) {
@@ -317,6 +320,11 @@ export default function Consult({ profile, seed, onSaved, onGoHistory, onGoCardB
             <p className="mt-2.5 text-[13px] font-bold text-ink text-center break-keep min-h-[2.4rem]">
               {flipped[i] ? getKoName(card) : <span className="text-mute font-medium">눌러서 열기</span>}
             </p>
+            {flipped[i] && (
+              <p className="mt-0.5 text-[11.5px] leading-snug text-mute text-center break-keep animate-fade-in-up">
+                {shortMeaning(card.meaning || TAROT_CARDS.find((t) => t.id === card.id)?.meaning)}
+              </p>
+            )}
           </div>
         ))}
       </div>

@@ -81,6 +81,7 @@ def test_extra_limit_and_no_charge_when_blocked(client, env):
 
 def test_insufficient_coins_does_not_burn_quota(client, env):
     env.setattr(main, "LIMIT_EXTRA_FREE", 1)
+    env.setattr(main, "FOLLOWUP_FREE", 0)
     rid, _ = unlocked_reading(client, env, coins=1)  # 풀이 열기에 1개 쓰고 0개
     r = client.post(f"/api/reading/{rid}/followup", json={"question": "코인이 없어요"}, headers=H())
     assert r.status_code == 402

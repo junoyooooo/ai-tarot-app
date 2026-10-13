@@ -163,6 +163,7 @@ UNLOCK_COST = _env_int("UNLOCK_COST", 1)
 ADVICE_COST = _env_int("ADVICE_COST", 1)
 FOLLOWUP_COST = _env_int("FOLLOWUP_COST", 1)
 FOLLOWUP_MAX = _env_int("FOLLOWUP_MAX", 3)
+FOLLOWUP_FREE = _env_int("FOLLOWUP_FREE", 1)  # 상담마다 이만큼은 코인 없이 물어볼 수 있다 (그 뒤로는 코인)
 WELCOME_COINS = _env_int("WELCOME_COINS", 1)
 WELCOME_PER_IP_DAILY = _env_int("WELCOME_PER_IP_DAILY", 3)
 GEMINI_MODEL_PREMIUM = os.getenv("GEMINI_MODEL_PREMIUM", "") or GEMINI_MODEL
@@ -557,6 +558,7 @@ def get_config():
         "products": payments.PRODUCTS,
         "costs": {"unlock": UNLOCK_COST, "advice": ADVICE_COST, "followup": FOLLOWUP_COST},
         "followup_max": FOLLOWUP_MAX,
+        "followup_free": FOLLOWUP_FREE,
         "auth": {"kakao": {"enabled": kakao_auth.enabled(), "client_id": kakao_auth.rest_api_key()}},
         "play": {
             "enabled": PLAY_ENABLED,
@@ -918,8 +920,9 @@ async def followup(reading_id: str, req: FollowUpRequest, request: Request):
             raise api_error(503, "engine_unavailable", "AI 엔진이 준비되지 않았어요.")
 
         quota_day = use_quota(device, "extra")
+        free_ask = len(r["followups"]) < FOLLOWUP_FREE
         try:
-            balance = _charge(device, FOLLOWUP_COST, "followup", reading_id)
+            balance = None if free_ask else _charge(device, FOLLOWUP_COST, "followup", reading_id)
         except HTTPException:
             release_quota(device, "extra", quota_day)
             raise
@@ -947,7 +950,8 @@ async def followup(reading_id: str, req: FollowUpRequest, request: Request):
         except Exception:
             logger.exception("후속 질문 답변 실패")
             release_quota(device, "extra", quota_day)
-            _refund(device, FOLLOWUP_COST, "followup_refund", reading_id)
+            if not free_ask:
+                _refund(device, FOLLOWUP_COST, "followup_refund", reading_id)
             raise api_error(502, "generation_failed", "답을 만들지 못했어요. 코인은 차감되지 않았어요.")
         count = STORE.append_followup(reading_id, {"q": question, "a": answer})
         w = STORE.get_wallet(device)

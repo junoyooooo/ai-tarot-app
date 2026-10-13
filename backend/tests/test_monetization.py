@@ -201,7 +201,7 @@ def test_followup_limit_and_crisis(client, env):
     for i in range(3):
         r = client.post(f"/api/reading/{rid}/followup", json={"question": f"질문 {i} 입니다"}, headers=H()).json()
         assert r["remaining"] == 2 - i
-    assert client.get("/api/wallet", headers=H()).json()["coins"] == 10 - 1 - 3
+    assert client.get("/api/wallet", headers=H()).json()["coins"] == 10 - 1 - 2  # 첫 질문은 무료
     r = client.post(f"/api/reading/{rid}/followup", json={"question": "또 물어봐요"}, headers=H())
     assert r.status_code == 429
 
@@ -219,3 +219,16 @@ def test_config(client):
     c = client.get("/api/config").json()
     assert c["paywall_enabled"] is True and c["payments_mode"] == "sandbox" and c["toss_client_key"] == ""
     assert len(c["products"]) == 4
+
+
+def test_first_followup_free_then_coin(client, env):
+    rid, _ = unlocked_reading(client, env, coins=2)  # 풀이 열기 1개 → 1개 남음
+    async def gen(system, prompt, **kw):
+        return "답이에요."
+    env.setattr(main, "generate_text", gen)
+    a = client.post(f"/api/reading/{rid}/followup", json={"question": "첫 질문이에요"}, headers=H()).json()
+    assert a["charged"] is False and client.get("/api/wallet", headers=H()).json()["coins"] == 1
+    b = client.post(f"/api/reading/{rid}/followup", json={"question": "둘째 질문이에요"}, headers=H()).json()
+    assert b["charged"] is True and client.get("/api/wallet", headers=H()).json()["coins"] == 0
+    c = client.post(f"/api/reading/{rid}/followup", json={"question": "셋째 질문이에요"}, headers=H())
+    assert c.status_code == 402

@@ -19,3 +19,7 @@
 - VITE_SHARE_URL: 공유 이미지 QR·주소·공유 글에 들어가는 앱 주소 (도메인/짧은 주소로 바꾸면 여기만 수정)
 - VITE_UMAMI_WEBSITE_ID, VITE_UMAMI_SRC: Umami 분석 (비우면 꺼짐). 공유로 들어온 방문은 utm_source=share 로 구분돼요.
 - 기록하는 이벤트: consult_start, unlock, checkout_start, share_save, share_native, share_copy_link (개인정보는 보내지 않음)
+
+## 사업자 정보 (Vercel 환경변수, 도움말 > 사업자 정보에 표시)
+VITE_BIZ_NAME, VITE_BIZ_REP, VITE_BIZ_REG_NO, VITE_BIZ_ECOMM_NO, VITE_BIZ_ADDRESS, VITE_BIZ_EMAIL, VITE_BIZ_PHONE
+비워 두면 '준비 중'으로 보여요. 이용약관·환불 규정(frontend/src/screens/Help.jsx)은 초안이니 결제를 열기 전에 꼭 검토해 주세요.

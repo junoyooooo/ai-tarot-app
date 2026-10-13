@@ -8,6 +8,16 @@ export const CATEGORIES = [
   { key: 'etc', label: '그 밖의 고민', hint: '딱 한 줄로 말하기 어려운 마음', mascot: 0, bg: 'bg-[#ffe3cc]', ring: 'ring-[#ffc299]' },
 ];
 
+// 카드 자리 이름 (서버 backend/spreads.py 와 같은 값. 카드 고르기 화면의 안내용)
+export const SPREAD_LABELS = {
+  love: ['내 마음', '상대 마음', '우리의 흐름'],
+  work: ['지금 상황', '걸림돌', '나아갈 길'],
+  money: ['지금 흐름', '새는 곳', '열리는 기회'],
+  study: ['지금의 나', '걸림돌', '힘이 될 것'],
+  relation: ['나의 모습', '상대 입장', '관계의 방향'],
+  etc: ['과거', '현재', '미래'],
+};
+
 export const categoryByKey = (key) => CATEGORIES.find((c) => c.key === key) || CATEGORIES[CATEGORIES.length - 1];
 
 // 리딩 섹션(과거/현재/미래/한마디)별 색

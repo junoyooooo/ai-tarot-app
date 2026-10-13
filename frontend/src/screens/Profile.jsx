@@ -1,17 +1,25 @@
 import React, { useState } from 'react';
+import { ChevronRight } from 'lucide-react';
 import Mascot from '../components/Mascot';
 import Collection from '../components/Collection';
 import CoinChip from '../components/CoinChip';
 import { useWallet } from '../hooks/useWallet';
+import { getSettings, setSetting, playSfx } from '../lib/sound';
 import { saveProfile, validateBirthdate, clearAll } from '../lib/storage';
 import { cleanName } from '../tarotData';
 
-export default function Profile({ profile, historyCount, onProfileChange, onCleared }) {
+export default function Profile({ profile, historyCount, onProfileChange, onCleared, onOpenHelp }) {
   const [form, setForm] = useState({ name: profile.name, birthdate: profile.birthdate });
   const [error, setError] = useState('');
   const [saved, setSaved] = useState(false);
   const [confirmClear, setConfirmClear] = useState(false);
   const wallet = useWallet();
+  const [prefs, setPrefs] = useState(() => getSettings());
+  const toggle = (key) => {
+    const next = setSetting(key, !prefs[key]);
+    setPrefs(next);
+    if (next[key]) playSfx(key === 'sound' ? 'pick' : 'tap');
+  };
 
   const dirty = form.name.trim() !== profile.name || form.birthdate !== profile.birthdate;
 
@@ -50,7 +58,47 @@ export default function Profile({ profile, historyCount, onProfileChange, onClea
         </div>
       )}
 
+      <button
+        type="button"
+        onClick={onOpenHelp}
+        className="mt-4 w-full flex items-center justify-between rounded-[22px] bg-brand-50 px-5 py-4 text-left cursor-pointer active:scale-[0.99] transition-transform"
+      >
+        <span>
+          <span className="block text-[15px] font-bold text-ink">도움말·이용안내</span>
+          <span className="block text-[12px] text-mute">사용법, 코인과 요금, 약관, 환불 규정</span>
+        </span>
+        <ChevronRight className="w-5 h-5 text-ink/40" aria-hidden="true" />
+      </button>
+
       <Collection />
+
+      <section className="mt-8">
+        <h2 className="text-[19px] font-extrabold text-ink mb-3">소리와 진동</h2>
+        <ul className="rounded-[22px] bg-brand-50 divide-y divide-brand-100 overflow-hidden">
+          {[
+            ['sound', '효과음', '카드를 고르고 뒤집을 때 소리가 나요'],
+            ['haptic', '진동', '카드를 고를 때 살짝 진동해요 (지원하는 기기만)'],
+          ].map(([key, label, desc]) => (
+            <li key={key} className="flex items-center justify-between gap-3 px-5 py-3.5">
+              <div className="min-w-0">
+                <p className="text-[15px] font-bold text-ink">{label}</p>
+                <p className="text-[12px] text-mute break-keep">{desc}</p>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={prefs[key]}
+                aria-label={label}
+                data-sfx="none"
+                onClick={() => toggle(key)}
+                className={`relative shrink-0 w-12 h-7 rounded-full transition-colors cursor-pointer ${prefs[key] ? 'bg-brand-500' : 'bg-[#cfc9e0]'}`}
+              >
+                <span className={`absolute top-0.5 left-0.5 w-6 h-6 rounded-full bg-white shadow transition-transform ${prefs[key] ? 'translate-x-5' : ''}`} />
+              </button>
+            </li>
+          ))}
+        </ul>
+      </section>
 
       <form onSubmit={submit} noValidate className="mt-8 space-y-4">
         <div>

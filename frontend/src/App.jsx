@@ -7,6 +7,7 @@ import Home from './screens/Home';
 import Consult from './screens/Consult';
 import History from './screens/History';
 import Profile from './screens/Profile';
+import Help from './screens/Help';
 import { getProfile, saveProfile, getHistory } from './lib/storage';
 
 export default function App() {
@@ -66,8 +67,11 @@ export default function App() {
           <History profile={profile} history={history} openId={openId} onOpenChange={setOpenId} onChanged={setHistory} />
         )}
 
+        {tab === 'help' && <Help onBack={() => goTab('profile')} />}
+
         {tab === 'profile' && (
           <Profile
+            onOpenHelp={() => goTab('help')}
             profile={profile}
             historyCount={history.length}
             onProfileChange={setProfile}
@@ -82,7 +86,7 @@ export default function App() {
         )}
       </main>
 
-      <TabBar active={tab} onChange={goTab} />
+      <TabBar active={tab === 'help' ? 'profile' : tab} onChange={goTab} />
       <ShopSheet />
       {wallet?.toast && (
         <div role="status" className="fixed left-1/2 -translate-x-1/2 bottom-28 z-[60] max-w-[390px] w-[calc(100%-40px)] rounded-2xl bg-ink text-white text-[14px] font-semibold px-4 py-3 text-center shadow-card break-keep">

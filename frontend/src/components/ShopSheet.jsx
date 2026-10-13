@@ -3,6 +3,7 @@ import { X } from 'lucide-react';
 import { useWallet } from '../hooks/useWallet';
 import { prepareCheckout, sandboxConfirm } from '../lib/api';
 import { track } from '../lib/analytics';
+import { playSfx } from '../lib/sound';
 
 const TOSS_SDK = 'https://js.tosspayments.com/v2/standard';
 
@@ -46,6 +47,7 @@ export default function ShopSheet() {
       if (order.mode === 'sandbox') {
         const r = await sandboxConfirm(order.order_id);
         w.applyWallet(r);
+        playSfx('coin');
         w.notify(`코인 ${r.granted}개가 충전되었어요 🪙 (테스트 결제)`);
         w.closeShop();
       } else if (order.mode === 'toss') {

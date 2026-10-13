@@ -235,3 +235,15 @@
     transition-duration: 0.01s;
   }
 }
+
+/* 카드 고르기: 섞는 동안 살짝 흔들리는 덱 */
+@keyframes deckShake {
+  0%, 100% { transform: translateX(0) rotate(0deg); }
+  25% { transform: translateX(-10px) rotate(-3deg); }
+  75% { transform: translateX(10px) rotate(3deg); }
+}
+.deck-shake { animation: deckShake 0.32s ease-in-out 3; }
+
+@media (prefers-reduced-motion: reduce) {
+  .deck-shake { animation: none !important; }
+}

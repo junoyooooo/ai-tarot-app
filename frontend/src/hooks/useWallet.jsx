@@ -1,5 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { fetchConfig, fetchWallet, tossConfirm } from '../lib/api';
+import { playSfx } from '../lib/sound';
 
 const WalletContext = createContext(null);
 export const useWallet = () => useContext(WalletContext);
@@ -69,6 +70,7 @@ export function WalletProvider({ children }) {
     tossConfirm(paymentKey, orderId, amount)
       .then((r) => {
         applyWallet(r);
+        if (r.granted) playSfx('coin');
         notify(r.granted ? `코인 ${r.granted}개가 충전되었어요 🪙` : '이미 처리된 결제예요.');
       })
       .catch((e) => notify(e.message || '결제 확인에 실패했어요. 문제가 계속되면 문의해 주세요.'));

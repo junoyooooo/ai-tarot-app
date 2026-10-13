@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useWallet } from '../hooks/useWallet';
 import { requestAdviceCard } from '../lib/api';
 import { getKoName } from '../tarotData';
+import { playSfx } from '../lib/sound';
 
 /** 조언 카드 한 장 더. 이미 뽑은 결과(advice)가 있으면 그대로 보여 준다. */
 export default function AdviceCard({ readingId, advice, onDone }) {
@@ -21,6 +22,7 @@ export default function AdviceCard({ readingId, advice, onDone }) {
     try {
       const r = await requestAdviceCard(readingId);
       if (paid) w.applyWallet(r);
+      playSfx('reveal');
       onDone({ card: r.card, text: r.text });
     } catch (e) {
       if (e.code === 'insufficient_coins') w.openShop();

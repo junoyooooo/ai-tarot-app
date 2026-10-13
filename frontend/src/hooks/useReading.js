@@ -37,6 +37,7 @@ export default function useReading() {
   const receivedLenRef = useRef(0);
   const runIdRef = useRef(0);
   const abortRef = useRef(null);
+  const pausedRef = useRef(false); // 카드를 고르는 동안 글자 출력을 잠시 멈춘다
 
   /* 서버 미리 깨우기 (무료 호스팅은 잠들어 있는 경우가 많음) */
   useEffect(() => {
@@ -83,6 +84,10 @@ export default function useReading() {
     let last = Date.now();
     drainTimerRef.current = setInterval(() => {
       const now = Date.now();
+      if (pausedRef.current) {
+        last = now;
+        return;
+      }
       const dt = now - last; // 탭이 백그라운드여서 타이머가 늦어져도 경과 시간만큼 보정
       last = now;
       const pending = pendingRef.current;
@@ -158,7 +163,8 @@ export default function useReading() {
   };
 
   /* ---------------- 시작 / 초기화 ---------------- */
-  const start = async (payload) => {
+  const start = async (payload, { hold = false } = {}) => {
+    pausedRef.current = hold;
     const runId = ++runIdRef.current;
     abortRef.current?.abort();
     resetReadingState();
@@ -262,7 +268,15 @@ export default function useReading() {
     setLocked(null);
   }, []);
 
+  /* 카드를 다 고른 뒤 호출: 멈춰 둔 글자 출력을 시작한다 */
+  const resume = useCallback(() => {
+    pausedRef.current = false;
+    startDrain();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const reset = useCallback(() => {
+    pausedRef.current = false;
     runIdRef.current += 1;
     abortRef.current?.abort();
     resetReadingState();
@@ -271,5 +285,5 @@ export default function useReading() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  return { isLoading, loadingText, loadingSlow, cards, reading, meta, isComplete, readingId, locked, start, skip, reset, applyUnlock };
+  return { isLoading, loadingText, loadingSlow, cards, reading, meta, isComplete, readingId, locked, start, skip, reset, resume, applyUnlock };
 }

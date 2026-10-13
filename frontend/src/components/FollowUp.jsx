@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Send } from 'lucide-react';
 import { useWallet } from '../hooks/useWallet';
 import { askFollowup } from '../lib/api';
+import { playSfx } from '../lib/sound';
 
 const SUGGESTIONS = ['그래서 오늘 당장 뭘 하면 좋을까요?', '제가 놓치고 있는 건 뭘까요?', '이 흐름이 좋아지려면 뭐가 필요할까요?'];
 
@@ -28,6 +29,7 @@ export default function FollowUp({ readingId, items = [], onChange }) {
     try {
       const r = await askFollowup(readingId, question);
       if (paid) w.applyWallet(r);
+      playSfx('pick');
       onChange([...items, { q: question, a: r.answer }]);
       setQ('');
     } catch (e) {

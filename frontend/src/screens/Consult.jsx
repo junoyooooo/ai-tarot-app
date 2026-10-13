@@ -7,7 +7,8 @@ import ShareActions from '../components/ShareActions';
 import LockedSection from '../components/LockedSection';
 import ReadingExtras from '../components/ReadingExtras';
 import useReading from '../hooks/useReading';
-import { CATEGORIES, categoryByKey } from '../lib/categories';
+import CardPicker from '../components/CardPicker';
+import { CATEGORIES, categoryByKey, SPREAD_LABELS } from '../lib/categories';
 import { addHistory, updateHistory } from '../lib/storage';
 import { recordCards } from '../lib/collection';
 import { track } from '../lib/analytics';
@@ -19,7 +20,7 @@ const CRISIS_SHOWN = /자살예방 상담전화 109/;
 
 export default function Consult({ profile, seed, onSaved, onGoHistory }) {
   const reading = useReading();
-  const [step, setStep] = useState('category'); // category → write → run
+  const [step, setStep] = useState('category'); // category → write → pick → run
   const [category, setCategory] = useState(null);
   const [concern, setConcern] = useState('');
   const [error, setError] = useState('');
@@ -109,14 +110,18 @@ export default function Consult({ profile, seed, onSaved, onGoHistory }) {
     setFollowups([]);
     setFlipped([false, false, false]);
     setRunInfo({ concern: text, category: cat.key });
-    setStep('run');
+    setStep('pick');
     track('consult_start', { category: cat.key });
-    reading.start({
-      name: profile.name,
-      birthdate: profile.birthdate,
-      concern: text.slice(0, 500),
-      category: cat.key,
-    });
+    // 카드를 고르는 동안 서버에 미리 요청해 두고, 다 고르면 글자 출력을 시작한다.
+    reading.start(
+      {
+        name: profile.name,
+        birthdate: profile.birthdate,
+        concern: text.slice(0, 500),
+        category: cat.key,
+      },
+      { hold: true }
+    );
     topRef.current?.scrollIntoView({ block: 'start' });
   };
 
@@ -220,7 +225,26 @@ export default function Consult({ profile, seed, onSaved, onGoHistory }) {
     );
   }
 
-  /* ---------------------------- 3. 로딩 ---------------------------- */
+  /* ---------------------------- 3. 카드 고르기 ---------------------------- */
+  if (step === 'pick') {
+    return (
+      <div ref={topRef}>
+        <CardPicker
+          slots={SPREAD_LABELS[cat.key] || SPREAD_LABELS.etc}
+          onComplete={() => {
+            setStep('run');
+            reading.resume();
+            window.scrollTo({ top: 0 });
+          }}
+        />
+        <button type="button" onClick={restart} className="mx-auto -mt-20 mb-24 flex items-center gap-1.5 text-[13px] font-semibold text-mute cursor-pointer">
+          <RefreshCw className="w-3.5 h-3.5" aria-hidden="true" /> 처음부터 다시
+        </button>
+      </div>
+    );
+  }
+
+  /* ---------------------------- 4. 로딩 ---------------------------- */
   if (reading.isLoading) {
     return (
       <div ref={topRef} className="min-h-[80dvh] px-8 flex flex-col items-center justify-center text-center animate-fade-in-up" role="status" aria-live="polite">
@@ -236,7 +260,7 @@ export default function Consult({ profile, seed, onSaved, onGoHistory }) {
     );
   }
 
-  /* ---------------------------- 4. 카드 + 리딩 ---------------------------- */
+  /* ---------------------------- 5. 카드 + 리딩 ---------------------------- */
   const showSkip = !reading.isComplete && reading.reading.length > 0;
   const summaryText = reading.meta.one_line_summary || `${name}님을 기다리는 가장 다정한 전환점`;
   const tags = reading.meta.hashtags?.length ? reading.meta.hashtags : ['#오늘의타로', '#마음의소리', '#작은위로'];
@@ -253,6 +277,7 @@ export default function Consult({ profile, seed, onSaved, onGoHistory }) {
         {!allFlipped && (
           <button
             type="button"
+            data-sfx="flip"
             onClick={() => setFlipped([true, true, true])}
             className="btn-soft shrink-0 text-[13px] px-3.5 py-2 rounded-full cursor-pointer"
           >

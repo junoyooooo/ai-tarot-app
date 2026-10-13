@@ -1,18 +1,24 @@
 import React from 'react';
 import { getKoName } from '../tarotData';
+import { playSfx } from '../lib/sound';
 
 /** 뒤집을 수 있는 타로 카드 한 장. 비율은 카드 이미지(768×1376)와 같습니다. */
 export default function CardFlip({ card, flipped, onFlip, delay = 0, label }) {
+  const doFlip = () => {
+    playSfx('flip');
+    onFlip?.();
+  };
   return (
     <div
       role="button"
       tabIndex={0}
+      data-sfx="none"
       aria-label={flipped ? `${getKoName(card)} 카드` : `${label || ''} 카드 뒤집기`}
-      onClick={() => !flipped && onFlip?.()}
+      onClick={() => !flipped && doFlip()}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();
-          if (!flipped) onFlip?.();
+          if (!flipped) doFlip();
         }
       }}
       className="w-full aspect-[768/1376] perspective-1200 cursor-pointer rounded-[14px] focus:outline-none focus-visible:ring-4 focus-visible:ring-brand-300"

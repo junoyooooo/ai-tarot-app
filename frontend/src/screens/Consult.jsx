@@ -9,7 +9,8 @@ import ReadingExtras from '../components/ReadingExtras';
 import useReading from '../hooks/useReading';
 import CardPicker from '../components/CardPicker';
 import { CATEGORIES, categoryByKey, SPREAD_LABELS } from '../lib/categories';
-import { addHistory, updateHistory } from '../lib/storage';
+import { addHistory, updateHistory, boxable } from '../lib/storage';
+import { flyToCardBox } from '../lib/boxFly';
 import { recordCards } from '../lib/collection';
 import { track } from '../lib/analytics';
 import { getKoName, cleanName } from '../tarotData';
@@ -80,6 +81,7 @@ export default function Consult({ profile, seed, onSaved, onGoHistory, onGoCardB
       lockedCost: reading.locked?.cost || 1,
     };
     onSaved(addHistory(entry));
+    if (boxable(entry)) setTimeout(() => flyToCardBox(reading.cards[1]?.image_url), 700); // 카드가 보관함으로 쏙 들어가는 안내
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reading.isComplete]);
 

@@ -23,6 +23,7 @@ export default function TabBar({ active, onChange }) {
                 className="w-full flex flex-col items-center gap-1 py-1.5 cursor-pointer"
               >
                 <span
+                  data-tab-icon={key}
                   className={`w-12 h-8 rounded-full flex items-center justify-center transition-colors ${
                     on ? 'bg-brand-100 text-brand-600' : 'text-mute'
                   }`}

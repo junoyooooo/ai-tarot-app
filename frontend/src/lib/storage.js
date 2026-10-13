@@ -99,7 +99,7 @@ const toBoxItem = (e) => ({
   hashtags: e.hashtags || [],
   cards: (e.cards || []).map((c) => ({ id: c.id, position: c.position })),
 });
-const boxable = (e) => e && e.summary && Array.isArray(e.cards) && e.cards.length === 3 && !/자살예방 상담전화 109/.test(e.reading || '');
+export const boxable = (e) => e && e.summary && Array.isArray(e.cards) && e.cards.length === 3 && !/자살예방 상담전화 109/.test(e.reading || '');
 
 export function getCardBox() {
   const saved = read('cardbox', null);

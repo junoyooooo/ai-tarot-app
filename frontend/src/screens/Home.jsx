@@ -32,8 +32,8 @@ export default function Home({ profile, history, onStartConsult, onOpenEntry, on
     const saved = getDaily();
     return saved && saved.date === today ? saved : null;
   });
-  const [flipped, setFlipped] = useState(Boolean(daily));
-  const [showText, setShowText] = useState(Boolean(daily)); // 카드가 뒤집힌 뒤 풀이가 스르륵 나타나도록 따로 관리
+  const [flipped, setFlipped] = useState(false); // 이미 뽑은 날에도 들어올 때마다 뒤집힌 채로 시작해서 눌러 보게 한다
+  const [showText, setShowText] = useState(false); // 카드가 뒤집힌 뒤 풀이가 스르륵 나타나도록 따로 관리
   const [replaying, setReplaying] = useState(false);
   const timers = useRef([]);
   const later = (fn, ms) => timers.current.push(setTimeout(fn, ms));
@@ -153,13 +153,13 @@ export default function Home({ profile, history, onStartConsult, onOpenEntry, on
           ) : (
             <div>
               <p className="text-[12px] font-bold text-[#a8385e]">하루에 한 장</p>
-              <p className="mt-0.5 text-[18px] font-extrabold text-ink leading-snug break-keep">오늘의 카드를 뽑아 볼까요?</p>
+              <p className="mt-0.5 text-[18px] font-extrabold text-ink leading-snug break-keep">카드를 터치해서 오늘의 카드를 확인해 보세요</p>
               <button
                 type="button"
                 onClick={draw}
                 className="mt-3 inline-flex items-center gap-1.5 bg-white text-[#a8385e] font-bold text-[13px] rounded-full px-4 py-2 cursor-pointer active:scale-95 transition-transform"
               >
-                <Sparkles className="w-4 h-4" aria-hidden="true" /> 카드 뽑기
+                <Sparkles className="w-4 h-4" aria-hidden="true" /> {daily ? '카드 확인하기' : '카드 뽑기'}
               </button>
             </div>
           )}

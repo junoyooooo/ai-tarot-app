@@ -18,6 +18,7 @@ export default function FollowUp({ readingId, items = [], onChange }) {
   const [error, setError] = useState('');
   const left = Math.max(0, max - items.length);
   const nextFree = items.length < free; // 이 상담에서 아직 무료 질문이 남았는지
+  const locked = paid && !nextFree && (w?.coins ?? 0) < cost; // 코인이 없으면 잠긴 상태로 보여 준다
 
   const send = async (text) => {
     const question = text.trim();
@@ -46,7 +47,7 @@ export default function FollowUp({ readingId, items = [], onChange }) {
 
   return (
     <section className="rounded-[28px] bg-[#e6f4ff] p-5">
-      <p className="text-[16px] font-extrabold text-ink">카드에게 더 물어보기</p>
+      <p className="text-[16px] font-extrabold text-ink">{locked && left > 0 ? '🔒 ' : ''}카드에게 더 물어보기</p>
       <p className="mt-1 text-[13px] text-ink/70 break-keep">
         풀이를 읽고 더 궁금한 게 있나요?{paid ? (nextFree ? ' 이번 질문은 무료예요,' : ` 질문 1개에 🪙 ${cost}개,`) : ''} 이 상담에서 {left}번 더 물어볼 수 있어요.
       </p>
@@ -62,7 +63,30 @@ export default function FollowUp({ readingId, items = [], onChange }) {
         </ul>
       )}
 
-      {left > 0 && (
+      {left > 0 && locked && (
+        <button
+          type="button"
+          onClick={() => w.openShop()}
+          className="mt-3.5 w-full rounded-2xl bg-white/75 p-4 text-left cursor-pointer active:scale-[0.99] transition-transform"
+        >
+          <span className="block text-[12px] font-bold text-brand-700">이런 걸 물어볼 수 있어요</span>
+          <span className="mt-2 flex flex-col gap-1.5">
+            {SUGGESTIONS.map((sg) => (
+              <span key={sg} className="text-[13.5px] font-semibold text-ink">“{sg}”</span>
+            ))}
+          </span>
+          <span className="mt-3 block space-y-1.5" aria-hidden="true">
+            <span className="block h-2.5 w-full rounded bg-ink/15 blur-[3px]" />
+            <span className="block h-2.5 w-[92%] rounded bg-ink/15 blur-[3px]" />
+            <span className="block h-2.5 w-[70%] rounded bg-ink/15 blur-[3px]" />
+          </span>
+          <span className="mt-3.5 flex items-center justify-center rounded-xl bg-brand-500 py-3 text-[14px] font-extrabold text-white">
+            🪙 코인으로 답 듣기
+          </span>
+        </button>
+      )}
+
+      {left > 0 && !locked && (
         <>
           {items.length === 0 && (
             <div className="mt-3 flex flex-wrap gap-1.5">

@@ -201,7 +201,7 @@ def test_followup_limit_and_crisis(client, env):
     for i in range(3):
         r = client.post(f"/api/reading/{rid}/followup", json={"question": f"질문 {i} 입니다"}, headers=H()).json()
         assert r["remaining"] == 2 - i
-    assert client.get("/api/wallet", headers=H()).json()["coins"] == 10 - 1 - 2  # 첫 질문은 무료
+    assert client.get("/api/wallet", headers=H()).json()["coins"] == 10 - 1 - 3
     r = client.post(f"/api/reading/{rid}/followup", json={"question": "또 물어봐요"}, headers=H())
     assert r.status_code == 429
 
@@ -222,6 +222,7 @@ def test_config(client):
 
 
 def test_first_followup_free_then_coin(client, env):
+    env.setattr(main, "FOLLOWUP_FREE", 1)
     rid, _ = unlocked_reading(client, env, coins=2)  # 풀이 열기 1개 → 1개 남음
     async def gen(system, prompt, **kw):
         return "답이에요."

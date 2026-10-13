@@ -83,7 +83,7 @@ export default function App() {
     );
   }
 
-  if (!profile && !welcomed) {
+  if (!welcomed) {
     return (
       <div className="app-shell">
         <Welcome auth={wallet?.config?.auth} onStart={finishWelcome} />

@@ -7,7 +7,7 @@
       "arcana": "Major",
       "meaning": "새로운 시작, 순수함, 모험, 무한한 가능성과 자유로운 여정",
       "image_symbol": "✨",
-      "image_url": "/tarot/1_A-modern-tarot-card-of-The-Fool-바보-featuring-a-car.jpeg"
+      "image_url": "/tarot/card_0.webp"
     },
     {
       "id": 1,
@@ -16,7 +16,7 @@
       "arcana": "Major",
       "meaning": "창조력, 잠재력 실현, 자신감, 모든 자원을 갖춘 시작",
       "image_symbol": "🪄",
-      "image_url": "/tarot/2_A-modern-tarot-card-of-The-Magician-마법사-featuring-.jpeg"
+      "image_url": "/tarot/card_1.webp"
     },
     {
       "id": 2,
@@ -25,7 +25,7 @@
       "arcana": "Major",
       "meaning": "직관, 무의식, 비밀, 내면의 깊은 지혜와 통찰",
       "image_symbol": "🌙",
-      "image_url": "/tarot/3_A-modern-tarot-card-of-The-High-Priestess-여사제-feat.jpeg"
+      "image_url": "/tarot/card_2.webp"
     },
     {
       "id": 3,
@@ -34,7 +34,7 @@
       "arcana": "Major",
       "meaning": "풍요, 모성, 자연의 결실, 창의적 번영과 따뜻한 포용",
       "image_symbol": "👑",
-      "image_url": "/tarot/4_A-modern-tarot-card-of-The-Empress-여황제-featuring-a.jpeg"
+      "image_url": "/tarot/card_3.webp"
     },
     {
       "id": 4,
@@ -43,7 +43,7 @@
       "arcana": "Major",
       "meaning": "권위, 안정, 규율, 확고한 기반과 리더십",
       "image_symbol": "🏛️",
-      "image_url": "/tarot/5_A-modern-tarot-card-of-The-Emperor-황제-featuring-a-.jpeg"
+      "image_url": "/tarot/card_4.webp"
     },
     {
       "id": 5,
@@ -52,7 +52,7 @@
       "arcana": "Major",
       "meaning": "전통, 가르침, 신념, 영적 인도와 도덕적 지침",
       "image_symbol": "📜",
-      "image_url": "/tarot/6_A-modern-tarot-card-of-The-Hierophant-교황-featuring.jpeg"
+      "image_url": "/tarot/card_5.webp"
     },
     {
       "id": 6,
@@ -61,7 +61,7 @@
       "arcana": "Major",
       "meaning": "사랑, 조화, 선택, 가치관의 일치와 깊은 유대",
       "image_symbol": "❤️",
-      "image_url": "/tarot/7_A-modern-tarot-card-of-The-Lovers-연인-featuring-a-t.jpeg"
+      "image_url": "/tarot/card_6.webp"
     },
     {
       "id": 7,
@@ -70,7 +70,7 @@
       "arcana": "Major",
       "meaning": "승리, 의지력, 전진, 난관 극복과 결단력 있는 통제",
       "image_symbol": "🛡️",
-      "image_url": "/tarot/8_A-modern-tarot-card-of-The-Chariot-전차-featuring-a-.jpeg"
+      "image_url": "/tarot/card_7.webp"
     },
     {
       "id": 8,
@@ -79,7 +79,7 @@
       "arcana": "Major",
       "meaning": "용기, 인내, 부드러운 힘, 내면의 조절과 자비로운 극복",
       "image_symbol": "🦁",
-      "image_url": "/tarot/9_A-modern-tarot-card-of-Strength-힘-featuring-a-gent.jpeg"
+      "image_url": "/tarot/card_8.webp"
     },
     {
       "id": 9,
@@ -88,7 +88,7 @@
       "arcana": "Major",
       "meaning": "성찰, 탐구, 내면의 빛, 고독 속에서 찾는 진실",
       "image_symbol": "🏮",
-      "image_url": "/tarot/10_A-modern-tarot-card-of-The-Hermit-은둔자-featuring-a-.jpeg"
+      "image_url": "/tarot/card_9.webp"
     },
     {
       "id": 10,
@@ -97,7 +97,7 @@
       "arcana": "Major",
       "meaning": "전환점, 운명, 피할 수 없는 변화, 행운과 인생의 순환",
       "image_symbol": "🎡",
-      "image_url": "/tarot/11_A-modern-tarot-card-of-Wheel-of-Fortune-운명의-수레바퀴-f.jpeg"
+      "image_url": "/tarot/card_10.webp"
     },
     {
       "id": 11,
@@ -106,7 +106,7 @@
       "arcana": "Major",
       "meaning": "공정함, 진실, 균형, 원인과 결과에 따른 정당한 판단",
       "image_symbol": "⚖️",
-      "image_url": "/tarot/12_A-modern-tarot-card-of-Justice-정의-featuring-a-shar.jpeg"
+      "image_url": "/tarot/card_11.webp"
     },
     {
       "id": 12,
@@ -115,7 +115,7 @@
       "arcana": "Major",
       "meaning": "새로운 관점, 멈춤, 희생, 수용을 통한 깊은 깨달음",
       "image_symbol": "🙃",
-      "image_url": "/tarot/13_A-modern-tarot-card-of-The-Hanged-Man-매달린-사람-featu.jpeg"
+      "image_url": "/tarot/card_12.webp"
     },
     {
       "id": 13,
@@ -124,7 +124,7 @@
       "arcana": "Major",
       "meaning": "끝과 시작, 변혁, 묵은 것의 탈피, 필연적인 재생",
       "image_symbol": "🦋",
-      "image_url": "/tarot/14_A-modern-tarot-card-of-Death-죽음-featuring-a-goth-s.jpeg"
+      "image_url": "/tarot/card_13.webp"
     },
     {
       "id": 14,
@@ -133,7 +133,7 @@
       "arcana": "Major",
       "meaning": "조화, 균형, 중용, 서두르지 않는 인내와 치유",
       "image_symbol": "🕊️",
-      "image_url": "/tarot/15_A-modern-tarot-card-of-Temperance-절제-featuring-a-c.jpeg"
+      "image_url": "/tarot/card_14.webp"
     },
     {
       "id": 15,
@@ -142,7 +142,7 @@
       "arcana": "Major",
       "meaning": "유혹, 집착, 구속, 물질적 얽매임과 내면의 그림자 마주하기",
       "image_symbol": "⛓️",
-      "image_url": "/tarot/16_A-modern-tarot-card-of-The-Devil-악마-featuring-a-ti.jpeg"
+      "image_url": "/tarot/card_15.webp"
     },
     {
       "id": 16,
@@ -151,7 +151,7 @@
       "arcana": "Major",
       "meaning": "갑작스러운 변화, 붕괴, 환상의 파괴, 새로운 토대를 위한 각성",
       "image_symbol": "⚡",
-      "image_url": "/tarot/17_A-modern-tarot-card-of-The-Tower-탑-featuring-a-per.jpeg"
+      "image_url": "/tarot/card_16.webp"
     },
     {
       "id": 17,
@@ -160,7 +160,7 @@
       "arcana": "Major",
       "meaning": "희망, 영감, 치유, 어둠 속에서 빛나는 미래의 길잡이",
       "image_symbol": "⭐",
-      "image_url": "/tarot/18_A-modern-tarot-card-of-The-Star-별-featuring-a-drea.jpeg"
+      "image_url": "/tarot/card_17.webp"
     },
     {
       "id": 18,
@@ -169,7 +169,7 @@
       "arcana": "Major",
       "meaning": "불안, 환상, 직관, 무의식의 안개 속을 걷는 여정",
       "image_symbol": "🌊",
-      "image_url": "/tarot/19_A-modern-tarot-card-of-The-Moon-달-featuring-a-pers.jpeg"
+      "image_url": "/tarot/card_18.webp"
     },
     {
       "id": 19,
@@ -178,7 +178,7 @@
       "arcana": "Major",
       "meaning": "성공, 활력, 명확성, 기쁨과 긍정적인 에너지의 만개",
       "image_symbol": "☀️",
-      "image_url": "/tarot/20_A-modern-tarot-card-of-The-Sun-태양-featuring-a-joyf.jpeg"
+      "image_url": "/tarot/card_19.webp"
     },
     {
       "id": 20,
@@ -187,7 +187,7 @@
       "arcana": "Major",
       "meaning": "부활, 결단, 소명, 과거의 청산과 새로운 차원으로의 부름",
       "image_symbol": "🎺",
-      "image_url": "/tarot/21_A-modern-tarot-card-of-Judgement-심판-featuring-a-pe.jpeg"
+      "image_url": "/tarot/card_20.webp"
     },
     {
       "id": 21,
@@ -196,7 +196,7 @@
       "arcana": "Major",
       "meaning": "완성, 성취, 통합, 여행의 대단원과 더 넓은 세계로의 도약",
       "image_symbol": "🌍",
-      "image_url": "/tarot/22_A-modern-tarot-card-of-The-World-세계-featuring-a-su.jpeg"
+      "image_url": "/tarot/card_21.webp"
     }
   ]
 }

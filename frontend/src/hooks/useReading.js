@@ -210,8 +210,9 @@ export default function useReading() {
             }
 
             if (parsed.type === 'cards') {
-              receivedCards = parsed.data;
-              setCards(parsed.data);
+              // 서버가 준 이미지 경로 대신 프론트에 있는 카드 이미지를 항상 사용
+              receivedCards = parsed.data.map((c) => ({ ...c, image_url: `/tarot/card_${c.id}.webp` }));
+              setCards(receivedCards);
               setIsLoading(false);
             } else if (parsed.type === 'content') {
               enqueueText(parsed.data);

@@ -167,46 +167,17 @@ SYSTEM_PROMPT = f"""너는 '별빛 타로'의 타로 마스터야. 단골 카페
 
 [출력 형식]
 먼저 위 구조의 본문을 쓰고, 그다음 줄에 {META_MARK} 라고만 쓴 뒤, 바로 다음 줄에 아래 JSON 한 줄을 써. JSON 뒤에는 아무것도 쓰지 마.
-{{"one_line_summary": "인스타 스토리에 올릴 한 줄(25~40자, 고민에 어울리는 따뜻하고 인상적인 문장, 이름은 넣지 않아도 됨)", "hashtags": ["#해시태그", "#3~4개", "#감성적이고담백하게"]}}"""
+{{"one_line_summary": "한 줄 요약", "hashtags": ["#태그1", "#태그2", "#태그3"]}}
 
+[one_line_summary 규칙]
+- 공백 포함 15~25자, 한 줄. 인스타 스토리 한가운데 크게 들어가는 문장이야.
+- 말하듯 쉬운 해요체. '~할 때예요', '용기를 내봐도 좋아요' 같은 틀에 박힌 끝맺음은 피해.
+- 이름은 넣지 않아. 카드 이름이나 '카드'라는 말도 넣지 않아.
+- 좋은 예: "끝낸 만큼, 이제 새로 시작해도 괜찮아요" / "서두르지 않아도 길은 이어져요" / "지금 마음이 가는 쪽이 맞아요"
 
-def pick_three_cards() -> List[dict]:
-    if len(TAROT_DB) < 3:
-        raise HTTPException(status_code=500, detail="타로 카드 데이터가 부족합니다.")
-    selected = random.sample(TAROT_DB, 3)
-    positions = ["과거", "현재", "미래"]
-    result = []
-    for pos, card in zip(positions, selected):
-        card_copy = dict(card)
-        card_copy["position"] = pos
-        result.append(card_copy)
-    return result
-
-
-def korean_card_name(name: str) -> str:
-    match = re.search(r"\(([^)]+)\)", name)
-    return match.group(1) if match else name
-
-
-def _sanitize_user_text(text: str) -> str:
-    # 태그를 닫아 프롬프트 구조를 깨뜨리는 입력을 막는다.
-    return text.replace("<", "＜").replace(">", "＞").strip()
-
-
-def build_user_prompt(req: ReadingRequest, cards: List[dict]) -> str:
-    cards_info = "\n".join(
-        f"- [{c['position']}] {korean_card_name(c['name'])} ({c['name']}) / 키워드: {c['meaning']}"
-        for c in cards
-    )
-    return f"""<user_input>
-이름: {_sanitize_user_text(req.name)}
-생년월일: {req.birthdate}
-고민: {_sanitize_user_text(req.concern)}
-뽑힌 카드:
-{cards_info}
-</user_input>
-
-위 정보를 바탕으로 정해진 구조와 말투 원칙을 지켜 리딩을 써 줘."""
+[hashtags 규칙]
+- 3개. 사람들이 실제로 쓰는 쉬운 말만 써. 예: #오늘의타로 #새로운시작 #작은위로 #마음정리 #응원
+- '마스터', '성취', '도약'처럼 딱딱하거나 한자어 느낌인 말, 고민 분야를 그대로 드러내는 말(#직장고민, #이별 등)은 쓰지 마. 공유되는 이미지라서 사적인 내용이 드러나면 안 돼."""
 
 
 DEFAULT_SUMMARY = "답은 이미 마음 어딘가에 있어요"

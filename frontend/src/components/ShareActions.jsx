@@ -25,7 +25,7 @@ function ShareCard({ forwardedRef, name, cards, summary, hashtags }) {
       <div className="relative text-center">
         <p className="text-[12px] font-bold tracking-[0.35em] text-brand-600">AI TAROT</p>
         <p className="text-[28px] font-extrabold mt-3 leading-tight">
-          {name ? `${name}님의 오늘의 타로` : '오늘의 타로'}
+          {name ? `${name}님의 타로 한 장면` : '타로 한 장면'}
         </p>
       </div>
 

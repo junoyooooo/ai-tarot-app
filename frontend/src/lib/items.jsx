@@ -160,10 +160,12 @@ export const ITEM_ART = {
     ),
   },
   s_boot: {
+    // 정면에서 본 장화: 가운데 목이 길고 아래가 둥글게 퍼져요 (발 위에 얹히는 모양)
     front: () => (
       <g {...S}>
-        <path d="M-34,0 L-34,-54 L22,-54 L22,-28 Q50,-26 50,-6 L50,0 Z" fill="#f2b34c" />
-        <rect x="-36" y="-56" width="60" height="14" rx="5" fill="#d98f22" />
+        <path d="M-26,-50 L26,-50 L28,-24 Q50,-22 50,-6 Q50,2 40,2 L-40,2 Q-50,2 -50,-6 Q-50,-22 -28,-24 Z" fill="#f2b34c" />
+        <rect x="-30" y="-56" width="60" height="14" rx="5" fill="#d98f22" />
+        <path d="M-20,-8 Q0,-2 20,-8" fill="none" stroke="#d98f22" strokeWidth="3" />
       </g>
     ),
   },

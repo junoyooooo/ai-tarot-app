@@ -102,6 +102,13 @@ export default function Profile({ profile, historyCount, onProfileChange, onClea
         </div>
       )}
 
+      {!account && !wallet?.config && (
+        <div className="mt-4 rounded-[22px] bg-white shadow-soft px-5 py-4 text-center">
+          <p className="text-[13.5px] font-bold text-ink">로그인 정보를 불러오는 중이에요…</p>
+          <p className="mt-1 text-[12px] text-mute break-keep">서버가 잠에서 깨는 중일 수 있어요. 잠시만 기다려 주세요.</p>
+        </div>
+      )}
+
       {wallet?.enabled && (
         <div className="mt-4 flex items-center justify-between rounded-[22px] bg-gold-200/40 px-5 py-3.5">
           <div>

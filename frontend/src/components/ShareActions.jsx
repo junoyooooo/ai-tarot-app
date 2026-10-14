@@ -26,7 +26,7 @@ function ShareCard({ forwardedRef, name, cards, summary, hashtags, qr }) {
       className="relative px-9 pt-9 pb-7 flex flex-col justify-between overflow-hidden font-sans text-ink"
     >
       <div className="relative text-center">
-        <p className="text-[12px] font-bold tracking-[0.35em] text-brand-600">AI TAROT</p>
+        <p className="text-[12px] font-bold tracking-[0.2em] text-brand-600">토닥토닥 별빛타로</p>
         <p className="text-[28px] font-extrabold mt-3 leading-tight">
           {name ? `${name}님의 타로 한 장면` : '타로 한 장면'}
         </p>
@@ -191,7 +191,7 @@ export default function ShareActions({ name, cards, summary, hashtags }) {
           if (navigator.canShare({ files: [file] })) {
             try {
               track('share_native');
-              await navigator.share({ files: [file], title: `${displayName}님의 AI 타로`, text: shareText });
+              await navigator.share({ files: [file], title: `${displayName}님의 별빛타로`, text: shareText });
               return;
             } catch (err) {
               if (err?.name === 'AbortError') return;

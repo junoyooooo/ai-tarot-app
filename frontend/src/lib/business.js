@@ -12,4 +12,4 @@ export const BUSINESS = [
   ['고객 문의 전화', env.VITE_BIZ_PHONE],
 ];
 
-export const SERVICE_NAME = '운명의 AI 타로';
+export const SERVICE_NAME = '토닥토닥 별빛타로';

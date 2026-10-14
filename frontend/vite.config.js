@@ -1,11 +1,30 @@
-import { defineConfig } from 'vite'
+import fs from 'node:fs'
+import path from 'node:path'
+import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
+// 약관·개인정보 페이지의 문의 이메일 자리를 빌드할 때 환경변수(VITE_BIZ_EMAIL)로 채워요.
+function legalContact(mode) {
+  return {
+    name: 'legal-contact',
+    apply: 'build',
+    closeBundle() {
+      const env = { ...loadEnv(mode, process.cwd(), 'VITE_'), ...process.env }
+      const email = (env.VITE_BIZ_EMAIL || '').trim() || '서비스 안 도움말의 ‘사업자 정보·문의’ 항목'
+      for (const f of ['privacy.html', 'terms.html']) {
+        const p = path.resolve('dist', f)
+        if (fs.existsSync(p)) fs.writeFileSync(p, fs.readFileSync(p, 'utf8').replaceAll('__BIZ_EMAIL__', email))
+      }
+    },
+  }
+}
+
 // https://vitejs.dev/config/
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   plugins: [
     react(),
+    legalContact(mode),
     VitePWA({
       // 매니페스트는 public/manifest.webmanifest 를 그대로 써요.
       manifest: false,
@@ -19,7 +38,7 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,svg,woff2}', 'icon-*.png', 'apple-touch-icon.png'],
         globIgnores: ['**/tarot/**', '**/mascots/**', 'og.png'],
         navigateFallback: '/index.html',
-        navigateFallbackDenylist: [/^\/api\//],
+        navigateFallbackDenylist: [/^\/api\//, /^\/(privacy|terms)/],
         runtimeCaching: [
           // 서버 요청은 절대 저장하지 않아요(코인·상담 내용이 낡아 보이면 안 돼요).
           { urlPattern: ({ url }) => url.pathname.startsWith('/api/') || url.hostname.endsWith('onrender.com'), handler: 'NetworkOnly' },
@@ -43,4 +62,4 @@ export default defineConfig({
       }
     }
   }
-})
+}))

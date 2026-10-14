@@ -187,6 +187,7 @@ export default function Help({ onBack }) {
           <p>프로필과 상담 기록은 이 기기의 브라우저에 저장돼요. ‘내 정보 → 내 데이터 모두 삭제’로 언제든 지울 수 있어요.</p>
           <p>코인과 이어서 묻기·조언 카드를 위해 상담 내용이 서버에 임시로 보관될 수 있어요. 서버에 남은 기록의 삭제를 원하면 아래 문의처로 요청해 주세요.</p>
           <p>이용 통계는 개인을 식별하지 않는 방식으로만 수집해요.</p>
+          <p><a href="/privacy" className="font-semibold text-brand-600 underline">개인정보처리방침 전체 보기</a></p>
         </Section>
 
         <Section id="terms" title="이용약관" open={open === 'terms'} onToggle={toggle}>
@@ -195,6 +196,7 @@ export default function Help({ onBack }) {
           <p><b className="text-ink">3. 코인</b><br />코인은 서비스 안에서만 쓰는 이용권이며 현금으로 바꾸거나 다른 사람에게 양도할 수 없어요. 코인은 이 기기에 연결돼 있어서 브라우저 데이터를 지우면 확인이 어려울 수 있어요. 충전한 코인은 구매일로부터 5년간 사용할 수 있어요.</p>
           <p><b className="text-ink">4. 서비스 변경·중단</b><br />기능과 가격은 미리 안내한 뒤 바꿀 수 있어요. 불가피하게 서비스를 종료할 때는 남은 유료 코인을 환불해 드려요.</p>
           <p><b className="text-ink">5. 면책</b><br />AI가 만든 풀이에는 부정확한 내용이 있을 수 있어요. 천재지변, 외부 서비스 장애 등 통제할 수 없는 사유로 서비스가 지연·중단되어도 책임이 제한될 수 있어요.</p>
+          <p><a href="/terms" className="font-semibold text-brand-600 underline">이용약관 전체 보기</a></p>
         </Section>
 
         <Section id="refund" title="환불 규정" open={open === 'refund'} onToggle={toggle}>

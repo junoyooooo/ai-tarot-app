@@ -78,10 +78,10 @@ class TelegramHandler(logging.Handler):
 # ---- 활동 요약(다이제스트) --------------------------------------------------
 # 접속·타로·결제·코인·로그인·오류를 모아 두었다가 DIGEST_MINUTES(기본 30분)마다 목록 한 통으로 보내요.
 # 오류의 즉시 알림과는 별개의 한도라서 서로 영향이 없고, 개인정보(IP·이메일 등)는 담지 않아요.
-DIGEST_MINUTES = int(os.getenv("DIGEST_MINUTES", "30") or 30)
+DIGEST_MINUTES = int(os.getenv("DIGEST_MINUTES", "10") or 10)
 DIGEST_MAX_LINES = 25
 _events: list = []
-_digest_started = False
+_timer = None
 _LABELS = {
     "visit": "👀 접속", "reading": "🔮 타로 뽑기", "payment": "💳 결제",
     "coin": "🪙 코인 사용", "login": "🔑 로그인", "error": "🚨 오류",
@@ -96,6 +96,11 @@ def track(kind: str, detail: str = "") -> None:
         with _lock:
             if len(_events) < 2000:
                 _events.append((time.time(), kind, detail[:80]))
+            global _timer
+            if _timer is None and DIGEST_MINUTES > 0:
+                _timer = threading.Timer(DIGEST_MINUTES * 60, _flush)
+                _timer.daemon = True
+                _timer.start()
     except Exception:
         pass
 
@@ -120,25 +125,22 @@ def build_digest(events: list, minutes: int) -> str:
     return "\n".join(lines)
 
 
-def _digest_loop() -> None:
-    while True:
-        time.sleep(DIGEST_MINUTES * 60)
-        try:
-            with _lock:
-                batch = _events[:]
-                _events.clear()
-            if batch:
-                _post(build_digest(batch, DIGEST_MINUTES))
-        except Exception:
-            pass
+def _flush() -> None:
+    global _timer
+    try:
+        with _lock:
+            batch = _events[:]
+            _events.clear()
+            _timer = None
+        if batch:
+            _post(build_digest(batch, DIGEST_MINUTES))
+    except Exception:
+        pass
 
 
 def _start_digest() -> None:
-    global _digest_started
-    if _digest_started or DIGEST_MINUTES <= 0:
-        return
-    _digest_started = True
-    threading.Thread(target=_digest_loop, daemon=True).start()
+    """무료 호스팅은 요청이 없으면 15분 뒤 잠들어서 '30분마다 도는 반복 스레드'가 죽어요.
+    그래서 첫 활동이 쌓이는 순간 DIGEST_MINUTES(기본 10분) 뒤에 한 번 보내는 타이머를 걸어요."""
 
 
 def install() -> None:

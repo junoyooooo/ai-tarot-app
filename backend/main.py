@@ -190,6 +190,16 @@ PLAY_EXCHANGE_PER_IP_WEEKLY = _env_int("PLAY_EXCHANGE_PER_IP_WEEKLY", 2)
 
 
 def _make_store() -> Store:
+    turso_url = os.getenv("TURSO_DATABASE_URL", "").strip()
+    turso_token = os.getenv("TURSO_AUTH_TOKEN", "").strip()
+    if turso_url:
+        # 외부 DB 를 쓰기로 했으면, 연결에 실패해도 임시 파일 DB 로 조용히 넘어가지 않아요(데이터가 사라질 수 있어서).
+        # 실패하면 배포가 실패로 끝나서 Render 가 이전 버전을 계속 유지해 줘요.
+        if not turso_token:
+            raise RuntimeError("TURSO_DATABASE_URL 은 있는데 TURSO_AUTH_TOKEN 이 없어요.")
+        store = Store("", turso=(turso_url, turso_token))
+        logger.info("Turso DB 를 사용합니다: %s", turso_url.split("?")[0])
+        return store
     path = os.getenv("DB_PATH") or os.path.join(os.path.dirname(__file__), "data", "tarot.db")
     try:
         return Store(path)
@@ -519,7 +529,7 @@ def read_root():
 @app.get("/health")
 def health():
     """프론트엔드가 페이지를 열 때 호출해 슬립 중인 서버를 미리 깨우는 용도."""
-    return {"ok": True}
+    return {"ok": True, "db": "turso" if getattr(STORE, "_turso", None) else "sqlite"}
 
 
 class KakaoLogin(BaseModel):

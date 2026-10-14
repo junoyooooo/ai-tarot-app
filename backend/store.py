@@ -1,7 +1,8 @@
 """SQLite 저장소: 코인 지갑, 상담(잠금 포함), 주문.
 
-- 지금은 기기 ID(device_id)로 사용자를 구분합니다. 로그인(카카오 등)을 붙이면 device_id 자리에 계정 ID를 쓰면 됩니다.
-- Render 무료 플랜은 디스크가 초기화되므로, 실제 결제를 받기 전에 DB_PATH 를 영구 디스크나 외부 DB(Postgres 등)로 옮기세요.
+- 기기 ID(device_id)로 사용자를 구분하고, 로그인(카카오·구글)하면 같은 기기 ID를 여러 기기에서 씁니다.
+- 기본은 파일 SQLite(DB_PATH)입니다. Render 무료 플랜은 디스크가 초기화되므로, 실제 서비스에서는
+  TURSO_DATABASE_URL / TURSO_AUTH_TOKEN 을 설정해 Turso(libSQL)에 저장하세요. (같은 SQL을 그대로 씁니다.)
 """
 import hashlib
 import json
@@ -14,6 +15,76 @@ from contextlib import contextmanager
 from typing import Any, Dict, Optional, Tuple
 
 from play import STARTER as PLAY_STARTER
+
+
+class _Row:
+    """libsql 의 결과 행을 sqlite3.Row 처럼 쓰게 해 주는 얇은 껍데기(이름·번호로 읽기, dict() 변환)."""
+
+    __slots__ = ("_cols", "_vals")
+
+    def __init__(self, cols, vals):
+        self._cols = cols
+        self._vals = tuple(vals)
+
+    def __getitem__(self, k):
+        if isinstance(k, str):
+            return self._vals[self._cols.index(k)]
+        return self._vals[k]
+
+    def keys(self):
+        return list(self._cols)
+
+    def __iter__(self):
+        return iter(self._vals)
+
+    def __len__(self):
+        return len(self._vals)
+
+
+class _Cursor:
+    def __init__(self, cur):
+        self._cur = cur
+        self._cols = [d[0] for d in (cur.description or [])]
+
+    @property
+    def rowcount(self):
+        return self._cur.rowcount
+
+    @property
+    def lastrowid(self):
+        return getattr(self._cur, "lastrowid", None)
+
+    def fetchone(self):
+        r = self._cur.fetchone()
+        return None if r is None else _Row(self._cols, r)
+
+    def fetchall(self):
+        return [_Row(self._cols, r) for r in self._cur.fetchall()]
+
+    def __iter__(self):
+        return iter(self.fetchall())
+
+
+class _LibsqlConn:
+    """libsql 연결을 sqlite3 연결처럼 쓰는 껍데기. execute 가 _Cursor 를 돌려줘요."""
+
+    def __init__(self, raw):
+        self._raw = raw
+
+    def execute(self, sql, params=()):
+        return _Cursor(self._raw.execute(sql, tuple(params)))
+
+    def executescript(self, script):
+        self._raw.executescript(script)
+
+    def commit(self):
+        self._raw.commit()
+
+    def close(self):
+        try:
+            self._raw.close()
+        except Exception:  # pragma: no cover
+            pass
 
 
 class InsufficientCoins(Exception):
@@ -113,24 +184,40 @@ CREATE TABLE IF NOT EXISTS orders (
 
 
 class Store:
-    def __init__(self, path: str):
+    def __init__(self, path: str, turso: Optional[Tuple[str, str]] = None):
+        """turso=(주소, 토큰)을 주면 Turso(libSQL)에 저장하고, 없으면 path 의 SQLite 파일을 씁니다."""
         self.path = path
-        folder = os.path.dirname(os.path.abspath(path))
-        os.makedirs(folder, exist_ok=True)
+        self._turso = turso
         self._lock = threading.Lock()
-        conn = sqlite3.connect(self.path, timeout=15)
+        if not turso:
+            folder = os.path.dirname(os.path.abspath(path))
+            os.makedirs(folder, exist_ok=True)
+        conn = self._open()
         try:
             conn.executescript(SCHEMA)
             conn.commit()
         finally:
             conn.close()
 
+    def _open(self):
+        if self._turso:
+            import libsql  # 지연 import: 파일 SQLite 로만 쓸 때는 필요 없어요
+
+            url, token = self._turso
+            if url.startswith(("libsql://", "https://", "http://", "wss://", "ws://")):
+                raw = libsql.connect(url, auth_token=token, isolation_level=None)
+            else:  # 테스트용: 로컬 파일을 libsql 로 열어 같은 코드 경로를 시험해요
+                raw = libsql.connect(url, isolation_level=None)
+            return _LibsqlConn(raw)
+        conn = sqlite3.connect(self.path, timeout=15, isolation_level=None)
+        conn.row_factory = sqlite3.Row
+        return conn
+
     @contextmanager
     def _tx(self):
         """쓰기 트랜잭션. 프로세스 안에서는 락으로, 여러 프로세스 사이에서는 BEGIN IMMEDIATE 로 보호한다."""
         with self._lock:
-            conn = sqlite3.connect(self.path, timeout=15, isolation_level=None)
-            conn.row_factory = sqlite3.Row
+            conn = self._open()
             try:
                 conn.execute("BEGIN IMMEDIATE")
                 yield conn
@@ -138,7 +225,7 @@ class Store:
             except BaseException:
                 try:
                     conn.execute("ROLLBACK")
-                except sqlite3.Error:
+                except Exception:
                     pass
                 raise
             finally:

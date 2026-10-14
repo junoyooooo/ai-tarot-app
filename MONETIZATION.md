@@ -68,3 +68,11 @@ VITE_BIZ_NAME, VITE_BIZ_REP, VITE_BIZ_REG_NO, VITE_BIZ_ECOMM_NO, VITE_BIZ_ADDRES
 - 실제 결제(`PAYMENTS_MODE=toss`)에서는 로그인(구글/카카오) 안 한 기기는 코인 충전이 막히고, 충전창에 로그인 안내가 떠요(서버도 403으로 막아요).
 - 로그인 수단이 하나도 켜져 있지 않으면 막지 않아요. 끄려면 `PAY_REQUIRES_LOGIN=false`.
 - 테스트 결제(sandbox)에서는 적용하지 않아요.
+
+
+## 영구 DB (Turso)
+- Render 무료 플랜의 디스크는 재시작 때 지워져요. 계정·코인·별가루를 지키려면 Turso(libSQL, 무료 플랜 있음)에 저장해요.
+- Render 환경변수 `TURSO_DATABASE_URL`(libsql://… 주소)과 `TURSO_AUTH_TOKEN`(비밀, 채팅·코드에 올리지 않기)을 넣으면 자동으로 Turso를 써요. 없으면 예전처럼 파일 SQLite(`DB_PATH`)를 써요.
+- 확인: 서버 주소 뒤에 `/health` 를 열어 `"db":"turso"` 가 보이면 연결된 거예요.
+- Turso 주소가 설정돼 있는데 연결에 실패하면, 임시 파일 DB 로 조용히 넘어가지 않고 배포가 실패해요(데이터가 사라지는 걸 막기 위해). Render 는 실패한 배포 대신 이전 버전을 계속 유지해요.
+- 시험: `TEST_STORE=libsql python -m pytest` 로 같은 테스트를 libsql 연결 껍데기로 돌려요.

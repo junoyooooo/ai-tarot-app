@@ -11,7 +11,11 @@ DEV = "dev_" + "a" * 20
 
 @pytest.fixture
 def env(tmp_path, monkeypatch):
-    monkeypatch.setattr(main, "STORE", Store(str(tmp_path / "t.db")))
+    if os.environ.get("TEST_STORE") == "libsql":  # 같은 시험을 libsql 연결 껍데기로도 돌려 봐요
+        store = Store("", turso=(str(tmp_path / "t.db"), ""))
+    else:
+        store = Store(str(tmp_path / "t.db"))
+    monkeypatch.setattr(main, "STORE", store)
     monkeypatch.setattr(main, "gemini_client", object())
     monkeypatch.setattr(main, "RATE_PER_MINUTE", 1000)
     monkeypatch.setattr(main, "RATE_PER_DAY", 100000)

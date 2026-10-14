@@ -76,3 +76,13 @@ VITE_BIZ_NAME, VITE_BIZ_REP, VITE_BIZ_REG_NO, VITE_BIZ_ECOMM_NO, VITE_BIZ_ADDRES
 - 확인: 서버 주소 뒤에 `/health` 를 열어 `"db":"turso"` 가 보이면 연결된 거예요.
 - Turso 주소가 설정돼 있는데 연결에 실패하면, 임시 파일 DB 로 조용히 넘어가지 않고 배포가 실패해요(데이터가 사라지는 걸 막기 위해). Render 는 실패한 배포 대신 이전 버전을 계속 유지해요.
 - 시험: `TEST_STORE=libsql python -m pytest` 로 같은 테스트를 libsql 연결 껍데기로 돌려요.
+
+## 오류 알림 (텔레그램)
+
+서버에 오류(ERROR 로그)가 나면 텔레그램으로 알려 줘요. 환경변수 두 개를 Render 에만 넣으세요(채팅·코드에 붙이지 마세요).
+
+- `TELEGRAM_BOT_TOKEN` : BotFather 가 준 봇 토큰
+- `TELEGRAM_CHAT_ID` : 알림 받을 채팅 번호
+
+없으면 꺼져 있어요. `…/health` 의 `"alerts": true` 로 켜졌는지 보고, `…/health?test_alert=true` 로 시험 알림을 보낼 수 있어요.
+같은 오류는 10분에 한 번, 전체로 한 시간에 20개까지만 보내요.

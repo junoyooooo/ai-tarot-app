@@ -17,6 +17,7 @@ from fastapi.responses import StreamingResponse
 from starlette.concurrency import run_in_threadpool
 from pydantic import BaseModel, Field
 
+import alerts
 import cardbox
 import kakao_auth
 import google_auth
@@ -31,6 +32,7 @@ load_dotenv(ENV_PATH)
 
 logger = logging.getLogger("ai-tarot")
 logging.basicConfig(level=logging.INFO)
+alerts.install()
 
 app = FastAPI(title="AI Tarot Reading API", version="1.2.0")
 
@@ -528,9 +530,16 @@ def read_root():
 
 
 @app.get("/health")
-def health():
-    """프론트엔드가 페이지를 열 때 호출해 슬립 중인 서버를 미리 깨우는 용도."""
-    return {"ok": True, "db": "turso" if getattr(STORE, "_turso", None) else "sqlite"}
+def health(test_alert: bool = False):
+    """프론트엔드가 페이지를 열 때 호출해 슬립 중인 서버를 미리 깨우는 용도.
+    /health?test_alert=true 로 열면 텔레그램 시험 알림을 한 번 보내요(10분에 한 번만)."""
+    sent = alerts.notify("✅ 별빛타로 알림 시험: 텔레그램 연결이 잘 됐어요!", "test") if test_alert else False
+    return {
+        "ok": True,
+        "db": "turso" if getattr(STORE, "_turso", None) else "sqlite",
+        "alerts": alerts.enabled(),
+        **({"test_alert_sent": sent} if test_alert else {}),
+    }
 
 
 class KakaoLogin(BaseModel):

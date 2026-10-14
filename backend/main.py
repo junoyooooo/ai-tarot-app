@@ -559,9 +559,11 @@ def read_root():
 
 
 @app.get("/health")
-def health(test_alert: bool = False):
+def health(test_alert: bool = False, visit: bool = False):
     """프론트엔드가 페이지를 열 때 호출해 슬립 중인 서버를 미리 깨우는 용도.
     /health?test_alert=true 로 열면 텔레그램 시험 알림을 한 번 보내요(10분에 한 번만)."""
+    if visit:  # 프론트가 세션당 한 번만 붙여 보내는 접속 신호
+        alerts.track("visit")
     sent = alerts.notify("✅ 별빛타로 알림 시험: 텔레그램 연결이 잘 됐어요!", "test") if test_alert else False
     return {
         "ok": True,
@@ -595,6 +597,7 @@ async def auth_kakao(body: KakaoLogin, request: Request):
     except kakao_auth.KakaoError:
         raise api_error(400, "kakao_failed", "카카오 로그인에 실패했어요. 다시 시도해 주세요.")
     new_device, status = STORE.link_account(kakao_id, nickname, device)
+    alerts.track("login", f"카카오 {'신규 가입' if status == 'created' else '로그인'}")
     return {"device_id": new_device, "nickname": nickname, "created": status == "created", "switched": new_device != device}
 
 
@@ -613,6 +616,7 @@ async def auth_google(body: GoogleLogin, request: Request):
     except google_auth.GoogleError:
         raise api_error(400, "google_failed", "구글 로그인에 실패했어요. 다시 시도해 주세요.")
     new_device, status = STORE.link_account("g:" + sub, name, device)
+    alerts.track("login", f"구글 {'신규 가입' if status == 'created' else '로그인'}")
     return {"device_id": new_device, "nickname": name, "created": status == "created", "switched": new_device != device}
 
 
@@ -824,6 +828,7 @@ async def tarot_reading_stream(req: ReadingRequest, request: Request):
     # DB 호출은 느릴 수 있어(Turso는 왕복마다 시간이 걸려요) 이벤트 루프를 막지 않게 스레드에서 돌린다.
     quota_day = None if crisis else await run_in_threadpool(use_quota, device, "reading")
     ip = client_ip(request)
+    alerts.track("reading", f"{req.category}")
 
     async def event_generator() -> AsyncGenerator[str, None]:
         # 1. 뽑힌 카드 정보를 먼저 보내 화면이 바로 넘어가게 한다.
@@ -899,7 +904,9 @@ def _charge(device: str, cost: int, reason: str, ref: str) -> Optional[int]:
     if not paywall_enabled():
         return None
     try:
-        return STORE.spend(device, cost, reason, ref)
+        left = STORE.spend(device, cost, reason, ref)
+        alerts.track("coin", f"{reason} -{cost}")
+        return left
     except InsufficientCoins as e:
         raise api_error(402, "insufficient_coins", "코인이 부족해요.", coins=e.coins, cost=cost)
 
@@ -918,6 +925,8 @@ async def unlock_reading(reading_id: str, request: Request):
         charged, balance = STORE.unlock_with_coins(reading_id, device, UNLOCK_COST)
     except InsufficientCoins as e:
         raise api_error(402, "insufficient_coins", "코인이 부족해요.", coins=e.coins, cost=UNLOCK_COST)
+    if charged:
+        alerts.track("coin", f"리딩 열기 -{UNLOCK_COST}")
     return {"text": r["locked_text"], "coins": balance, "charged": charged}
 
 
@@ -1102,6 +1111,8 @@ def checkout_sandbox_confirm(req: SandboxConfirm, request: Request):
     device = device_id_from(request, required=True)
     o = _order_for(req.order_id, device)
     granted, _ = STORE.complete_order(o["order_id"], "sandbox")
+    if granted:
+        alerts.track("payment", f"테스트 {o['amount']}원 / 코인 +{o['coins']}")
     return _purchase_result(device, o["coins"] if granted else 0)
 
 
@@ -1128,4 +1139,6 @@ async def checkout_confirm(req: TossConfirm, request: Request):
         granted, _ = STORE.complete_order(o["order_id"], req.paymentKey)
     except OrderError:
         raise api_error(404, "order_not_found", "주문을 찾을 수 없어요.")
+    if granted:
+        alerts.track("payment", f"{o['amount']}원 / 코인 +{o['coins']}")
     return _purchase_result(device, o["coins"] if granted else 0)

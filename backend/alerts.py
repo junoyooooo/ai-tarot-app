@@ -69,9 +69,76 @@ class TelegramHandler(logging.Handler):
                 e = record.exc_info[1]
                 exc = f"\n{type(e).__name__}: {str(e)[:300]}"
             key = f"{record.name}|{record.pathname}:{record.lineno}"
+            track("error", f"{record.name}: {msg[:60]}")
             notify(f"🚨 별빛타로 서버 오류\n{record.name}: {msg[:400]}{exc}", key)
         except Exception:
             pass
+
+
+# ---- 활동 요약(다이제스트) --------------------------------------------------
+# 접속·타로·결제·코인·로그인·오류를 모아 두었다가 DIGEST_MINUTES(기본 30분)마다 목록 한 통으로 보내요.
+# 오류의 즉시 알림과는 별개의 한도라서 서로 영향이 없고, 개인정보(IP·이메일 등)는 담지 않아요.
+DIGEST_MINUTES = int(os.getenv("DIGEST_MINUTES", "30") or 30)
+DIGEST_MAX_LINES = 25
+_events: list = []
+_digest_started = False
+_LABELS = {
+    "visit": "👀 접속", "reading": "🔮 타로 뽑기", "payment": "💳 결제",
+    "coin": "🪙 코인 사용", "login": "🔑 로그인", "error": "🚨 오류",
+}
+
+
+def track(kind: str, detail: str = "") -> None:
+    """활동을 요약 목록에 쌓는다(꺼져 있으면 아무것도 안 함). 절대 예외를 내지 않는다."""
+    try:
+        if not enabled():
+            return
+        with _lock:
+            if len(_events) < 2000:
+                _events.append((time.time(), kind, detail[:80]))
+    except Exception:
+        pass
+
+
+def build_digest(events: list, minutes: int) -> str:
+    counts: dict = {}
+    for _, kind, _d in events:
+        counts[kind] = counts.get(kind, 0) + 1
+    lines = [f"📊 별빛타로 최근 {minutes}분 요약"]
+    for kind in ("visit", "reading", "login", "coin", "payment", "error"):
+        lines.append(f"{_LABELS[kind]} {counts.get(kind, 0)}건")
+    detail = [(t, k, d) for t, k, d in events if k != "visit"]
+    if detail:
+        lines.append("")
+        lines.append("· 자세히")
+        kst = time.gmtime
+        for t, k, d in detail[:DIGEST_MAX_LINES]:
+            hm = time.strftime("%H:%M", time.gmtime(t + 9 * 3600))
+            lines.append(f"{hm} {_LABELS[k].split()[0]} {d}".rstrip())
+        if len(detail) > DIGEST_MAX_LINES:
+            lines.append(f"…외 {len(detail) - DIGEST_MAX_LINES}건")
+    return "\n".join(lines)
+
+
+def _digest_loop() -> None:
+    while True:
+        time.sleep(DIGEST_MINUTES * 60)
+        try:
+            with _lock:
+                batch = _events[:]
+                _events.clear()
+            if batch:
+                _post(build_digest(batch, DIGEST_MINUTES))
+        except Exception:
+            pass
+
+
+def _start_digest() -> None:
+    global _digest_started
+    if _digest_started or DIGEST_MINUTES <= 0:
+        return
+    _digest_started = True
+    threading.Thread(target=_digest_loop, daemon=True).start()
 
 
 def install() -> None:
@@ -81,3 +148,4 @@ def install() -> None:
         return
     h = TelegramHandler(level=logging.ERROR)
     root.addHandler(h)
+    _start_digest()

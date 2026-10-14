@@ -42,7 +42,12 @@ export default function useReading() {
 
   /* 서버 미리 깨우기 (무료 호스팅은 잠들어 있는 경우가 많음) */
   useEffect(() => {
-    fetch(`${API_BASE}/health`, { mode: 'no-cors', cache: 'no-store' }).catch(() => {});
+    let first = false;
+    try {
+      first = !sessionStorage.getItem('visit_pinged');
+      if (first) sessionStorage.setItem('visit_pinged', '1');
+    } catch { /* 저장소를 못 쓰면 접속 신호만 건너뛰어요 */ }
+    fetch(`${API_BASE}/health${first ? '?visit=1' : ''}`, { mode: 'no-cors', cache: 'no-store' }).catch(() => {});
   }, []);
 
   /* 로딩 문구 회전 + 오래 걸릴 때 안내 */

@@ -21,6 +21,7 @@ export default function App() {
   // 처음 열면 타이틀(로그인) 화면을 한 번 보여 줘요. 시작하기를 누르거나 로그인하면 다시 안 나와요.
   const [welcomed, setWelcomed] = useState(() => {
     try {
+      if (new URLSearchParams(window.location.search).has('welcome')) return false; // 주소 뒤에 ?welcome 을 붙이면 시작 화면을 다시 볼 수 있어요
       return !!window.localStorage.getItem('tarot.v1.welcomed') || !!getAccount();
     } catch {
       return false;

@@ -14,6 +14,7 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
+from starlette.concurrency import run_in_threadpool
 from pydantic import BaseModel, Field
 
 import cardbox
@@ -782,13 +783,16 @@ async def tarot_reading_stream(req: ReadingRequest, request: Request):
     crisis = bool(CRISIS_RE.search(req.concern))
     lock_on = paywall_enabled() and not crisis
     # 위기 상황의 안내는 한도와 상관없이 항상 받을 수 있어야 한다.
-    quota_day = None if crisis else use_quota(device, "reading")
-    if device != "anonymous":
-        STORE.ensure_wallet(device, client_ip(request), WELCOME_COINS, WELCOME_PER_IP_DAILY)
+    # DB 호출은 느릴 수 있어(Turso는 왕복마다 시간이 걸려요) 이벤트 루프를 막지 않게 스레드에서 돌린다.
+    quota_day = None if crisis else await run_in_threadpool(use_quota, device, "reading")
+    ip = client_ip(request)
 
     async def event_generator() -> AsyncGenerator[str, None]:
         # 1. 뽑힌 카드 정보를 먼저 보내 화면이 바로 넘어가게 한다.
         yield sse({"type": "cards", "data": cards, "reading_id": reading_id, "spread": {"key": spread["key"], "label": spread["label"]}})
+        # 지갑 준비는 화면이 넘어간 뒤에 해도 늦지 않아요(AI 답이 오는 동안 끝나요).
+        if device != "anonymous":
+            await run_in_threadpool(STORE.ensure_wallet, device, ip, WELCOME_COINS, WELCOME_PER_IP_DAILY)
 
         if not gemini_client:
             release_quota(device, "reading", quota_day)
@@ -817,7 +821,8 @@ async def tarot_reading_stream(req: ReadingRequest, request: Request):
             return
 
         locked = splitter.locked_text
-        STORE.save_reading(
+        await run_in_threadpool(
+            STORE.save_reading,
             {
                 "id": reading_id, "device_id": device, "category": req.category, "concern": req.concern,
                 "cards": cards, "free_text": splitter.free_text, "locked_text": locked, "meta": meta,

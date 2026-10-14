@@ -231,6 +231,15 @@ class Store:
             finally:
                 conn.close()
 
+    @contextmanager
+    def _read(self):
+        """읽기 전용·문장 하나짜리 쿼리용. BEGIN/COMMIT 왕복을 아끼려고 트랜잭션 없이 실행해요(Turso는 왕복마다 느려요)."""
+        conn = self._open()
+        try:
+            yield conn
+        finally:
+            conn.close()
+
     # ------------------------------------------------------------------ 계정(카카오 로그인)
     def link_account(self, kakao_id: str, nickname: str, device_id: str) -> Tuple[str, str]:
         """카카오 회원을 기기 ID(코인·별가루가 묶인 키)에 연결한다. (기기 ID, 'created'|'existing')을 돌려준다.
@@ -249,13 +258,13 @@ class Store:
             return device, "created"
 
     def has_account(self, device_id: str) -> bool:
-        with self._tx() as c:
+        with self._read() as c:
             return c.execute("SELECT 1 FROM accounts WHERE device_id=?", (device_id,)).fetchone() is not None
 
     # ------------------------------------------------------------------ 카드 보관함
     def cardbox_info(self, device_id: str, tz_offset_hours: int = 9) -> Dict[str, Any]:
         """이 기기의 상담 수(전체, 월별)와 이미 받은 보상 키."""
-        with self._tx() as c:
+        with self._read() as c:
             rows = c.execute("SELECT created_at FROM readings WHERE device_id=?", (device_id,)).fetchall()
             claims = [r["key"] for r in c.execute("SELECT key FROM cardbox_claims WHERE device_id=?", (device_id,)).fetchall()]
         by_month: Dict[str, int] = {}
@@ -286,7 +295,7 @@ class Store:
     GLOBAL_ID = "*"
 
     def has_paid(self, device_id: str) -> bool:
-        with self._tx() as c:
+        with self._read() as c:
             return c.execute("SELECT 1 FROM orders WHERE device_id=? AND status='paid' LIMIT 1", (device_id,)).fetchone() is not None
 
     @staticmethod
@@ -354,7 +363,7 @@ class Store:
             return dict(row)
 
     def get_wallet(self, device_id: str) -> Optional[Dict[str, Any]]:
-        with self._tx() as c:
+        with self._read() as c:
             row = c.execute("SELECT * FROM wallets WHERE device_id=?", (device_id,)).fetchone()
             return dict(row) if row else None
 
@@ -391,7 +400,7 @@ class Store:
 
     # ------------------------------------------------------------------ 상담
     def save_reading(self, r: Dict[str, Any]) -> None:
-        with self._tx() as c:
+        with self._read() as c:  # 문장 하나라 그 자체로 원자적이에요
             c.execute(
                 """INSERT OR REPLACE INTO readings
                    (id, device_id, category, concern, cards_json, free_text, locked_text, meta_json, unlocked, created_at)
@@ -417,7 +426,7 @@ class Store:
         return d
 
     def get_reading(self, reading_id: str) -> Optional[Dict[str, Any]]:
-        with self._tx() as c:
+        with self._read() as c:
             return self._reading_row(c.execute("SELECT * FROM readings WHERE id=?", (reading_id,)).fetchone())
 
     def unlock_with_coins(self, reading_id: str, device_id: str, cost: int) -> Tuple[bool, int]:
@@ -434,7 +443,7 @@ class Store:
             return True, balance
 
     def set_advice(self, reading_id: str, advice: Dict[str, Any]) -> None:
-        with self._tx() as c:
+        with self._read() as c:
             c.execute("UPDATE readings SET advice_json=? WHERE id=?", (json.dumps(advice, ensure_ascii=False), reading_id))
 
     def append_followup(self, reading_id: str, item: Dict[str, str]) -> int:

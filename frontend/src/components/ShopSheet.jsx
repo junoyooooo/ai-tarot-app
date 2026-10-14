@@ -4,6 +4,8 @@ import { useWallet } from '../hooks/useWallet';
 import { prepareCheckout, sandboxConfirm } from '../lib/api';
 import { track } from '../lib/analytics';
 import { playSfx } from '../lib/sound';
+import { getAccount, startKakaoLogin } from '../lib/auth';
+import GoogleButton from './GoogleButton';
 
 const TOSS_SDK = 'https://js.tosspayments.com/v2/standard';
 
@@ -36,6 +38,9 @@ export default function ShopSheet() {
 
   if (!w?.enabled || !w.shopOpen) return null;
   const mode = w.config.payments_mode;
+  const needLogin = Boolean(w.config.login_required_to_pay) && !getAccount();
+  const kakao = w.config.auth?.kakao;
+  const google = w.config.auth?.google;
   const products = (w.config.products || []).filter((p) => !p.first_only || w.firstPurchase);
 
   const buy = async (p) => {
@@ -89,6 +94,21 @@ export default function ShopSheet() {
         {mode === 'off' ? (
           <div className="mt-5 rounded-[22px] bg-brand-50 px-5 py-6 text-center text-[14px] text-mute leading-relaxed break-keep">
             결제를 준비하고 있어요. 조금만 기다려 주세요 🌙
+          </div>
+        ) : needLogin ? (
+          <div className="mt-5 rounded-[22px] bg-brand-50 px-5 py-6 text-center">
+            <p className="text-[16px] font-extrabold text-ink">먼저 로그인해 주세요</p>
+            <p className="mt-1.5 text-[13px] text-mute leading-relaxed break-keep">
+              충전한 코인이 계정에 안전하게 보관돼요. 기기를 바꾸거나 브라우저 데이터를 지워도 그대로 이어져요.
+            </p>
+            <div className="mt-4 space-y-2.5">
+              {google?.enabled && <GoogleButton clientId={google.client_id} onDone={() => window.location.replace('/')} />}
+              {kakao?.enabled && (
+                <button type="button" onClick={() => startKakaoLogin(kakao.client_id)} className="w-full rounded-full bg-[#FEE500] py-3 text-[14.5px] font-bold text-[#191919] cursor-pointer">
+                  카카오로 계속하기
+                </button>
+              )}
+            </div>
           </div>
         ) : (
           <>

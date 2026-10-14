@@ -573,6 +573,7 @@ def get_config():
     return {
         "paywall_enabled": paywall_enabled(),
         "payments_mode": mode,
+        "login_required_to_pay": login_required_to_pay(),
         "toss_client_key": os.getenv("TOSS_CLIENT_KEY", "") if mode == "toss" else "",
         "products": payments.PRODUCTS,
         "costs": {"unlock": UNLOCK_COST, "advice": ADVICE_COST, "followup": FOLLOWUP_COST},
@@ -997,12 +998,23 @@ class TossConfirm(BaseModel):
     amount: int
 
 
+def login_required_to_pay() -> bool:
+    """실제 결제(toss)에서는 로그인한 사람만 결제하게 해요. 로그인 수단이 하나도 켜져 있지 않으면 막지 않아요."""
+    if payments.payments_mode() != "toss":
+        return False
+    if os.getenv("PAY_REQUIRES_LOGIN", "true").strip().lower() in ("0", "false", "no", "off"):
+        return False
+    return kakao_auth.enabled() or google_auth.enabled()
+
+
 @app.post("/api/checkout/prepare")
 def checkout_prepare(req: CheckoutPrepare, request: Request):
     mode = payments.payments_mode()
     if mode == "off":
         raise api_error(503, "payments_disabled", "결제를 준비하고 있어요.")
     device = device_id_from(request, required=True)
+    if login_required_to_pay() and not STORE.has_account(device):
+        raise api_error(403, "login_required", "결제하려면 먼저 로그인해 주세요. 코인이 계정에 안전하게 보관돼요.")
     wallet = STORE.ensure_wallet(device, client_ip(request), WELCOME_COINS, WELCOME_PER_IP_DAILY)
     product = payments.PRODUCT_BY_SKU.get(req.sku)
     if not product:

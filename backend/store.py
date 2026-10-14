@@ -161,6 +161,10 @@ class Store:
             )
             return device, "created"
 
+    def has_account(self, device_id: str) -> bool:
+        with self._tx() as c:
+            return c.execute("SELECT 1 FROM accounts WHERE device_id=?", (device_id,)).fetchone() is not None
+
     # ------------------------------------------------------------------ 카드 보관함
     def cardbox_info(self, device_id: str, tz_offset_hours: int = 9) -> Dict[str, Any]:
         """이 기기의 상담 수(전체, 월별)와 이미 받은 보상 키."""

@@ -63,3 +63,8 @@ VITE_BIZ_NAME, VITE_BIZ_REP, VITE_BIZ_REG_NO, VITE_BIZ_ECOMM_NO, VITE_BIZ_ADDRES
 - 구글 클라우드 콘솔 → API 및 서비스 → 사용자 인증 정보 → OAuth 클라이언트 ID(웹 애플리케이션) 만들기.
 - 승인된 자바스크립트 원본에 `https://ai-tarot-app-tau.vercel.app` (테스트용 `http://localhost:5173`) 추가. 리디렉션 URI는 필요 없어요.
 - Render 환경변수 `GOOGLE_CLIENT_ID` 에 클라이언트 ID(공개값)를 넣으면 로그인 버튼이 켜져요. 클라이언트 보안 비밀은 쓰지 않아요.
+
+## 결제는 로그인한 사람만
+- 실제 결제(`PAYMENTS_MODE=toss`)에서는 로그인(구글/카카오) 안 한 기기는 코인 충전이 막히고, 충전창에 로그인 안내가 떠요(서버도 403으로 막아요).
+- 로그인 수단이 하나도 켜져 있지 않으면 막지 않아요. 끄려면 `PAY_REQUIRES_LOGIN=false`.
+- 테스트 결제(sandbox)에서는 적용하지 않아요.

@@ -118,6 +118,7 @@ def test_checkout_modes(client, env):
     env.setenv("PAYMENTS_MODE", "off")
     assert client.post("/api/checkout/prepare", json={"sku": "coin_1"}, headers=H()).status_code == 503
     env.setenv("PAYMENTS_MODE", "toss")
+    env.setenv("PAY_REQUIRES_LOGIN", "false")
     p = client.post("/api/checkout/prepare", json={"sku": "coin_1"}, headers=H()).json()
     assert client.post("/api/checkout/sandbox-confirm", json={"order_id": p["order_id"]}, headers=H()).status_code == 403
     # someone else's order
@@ -127,6 +128,7 @@ def test_checkout_modes(client, env):
 
 def test_toss_confirm(client, env):
     env.setenv("PAYMENTS_MODE", "toss")
+    env.setenv("PAY_REQUIRES_LOGIN", "false")
     calls = []
 
     async def ok(pk, oid, amt, client=None):
@@ -233,3 +235,21 @@ def test_first_followup_free_then_coin(client, env):
     assert b["charged"] is True and client.get("/api/wallet", headers=H()).json()["coins"] == 0
     c = client.post(f"/api/reading/{rid}/followup", json={"question": "셋째 질문이에요"}, headers=H())
     assert c.status_code == 402
+
+
+def test_toss_requires_login_to_pay(client, env):
+    import kakao_auth
+    env.setenv("PAYMENTS_MODE", "toss")
+    env.setenv("KAKAO_REST_API_KEY", "k")
+    assert client.get("/api/config").json()["login_required_to_pay"] is True
+    r = client.post("/api/checkout/prepare", json={"sku": "coin_1"}, headers=H())
+    assert r.status_code == 403 and r.json()["detail"]["code"] == "login_required"
+    # 로그인한 기기는 통과
+    async def fp(code, uri):
+        return "42", "준호"
+    env.setattr(kakao_auth, "fetch_profile", fp)
+    client.post("/api/auth/kakao", json={"code": "ok", "redirect_uri": "https://ai-tarot-app-tau.vercel.app/"}, headers=H())
+    assert client.post("/api/checkout/prepare", json={"sku": "coin_1"}, headers=H()).status_code == 200
+    # 로그인 수단이 꺼져 있으면 막지 않는다
+    env.delenv("KAKAO_REST_API_KEY")
+    assert client.get("/api/config").json()["login_required_to_pay"] is False

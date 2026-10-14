@@ -25,7 +25,7 @@ export default function Profile({ profile, historyCount, onProfileChange, onClea
     if (next[key]) playSfx(key === 'sound' ? 'pick' : 'tap');
   };
 
-  const [account, setAccount] = useState(() => getAccount());
+  const [account] = useState(() => getAccount());
   const kakao = wallet?.config?.auth?.kakao;
   const google = wallet?.config?.auth?.google;
 
@@ -68,7 +68,12 @@ export default function Profile({ profile, historyCount, onProfileChange, onClea
                 type="button"
                 onClick={() => {
                   logoutAccount();
-                  setAccount(null);
+                  try {
+                    window.localStorage.removeItem('tarot.v1.welcomed');
+                  } catch {
+                    /* 무시 */
+                  }
+                  window.location.replace('/'); // 로그아웃하면 시작(로그인) 화면으로 돌아가요
                 }}
                 className="shrink-0 text-[13px] font-semibold text-mute underline"
               >

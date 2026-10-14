@@ -38,16 +38,24 @@ export function WalletProvider({ children }) {
   }, [applyWallet]);
 
   useEffect(() => {
+    // 서버가 잠들어 있으면 첫 요청이 실패할 수 있어서, 성공할 때까지 몇 번 다시 시도해요.
     let alive = true;
-    fetchConfig()
-      .then((c) => {
-        if (!alive) return;
-        setConfig(c);
-        if (c.paywall_enabled) refresh();
-      })
-      .catch(() => {});
+    let timer = null;
+    const load = (n) => {
+      fetchConfig()
+        .then((c) => {
+          if (!alive) return;
+          setConfig(c);
+          if (c.paywall_enabled) refresh();
+        })
+        .catch(() => {
+          if (alive && n < 6) timer = setTimeout(() => load(n + 1), 3000 + n * 2000);
+        });
+    };
+    load(0);
     return () => {
       alive = false;
+      clearTimeout(timer);
     };
   }, [refresh]);
 

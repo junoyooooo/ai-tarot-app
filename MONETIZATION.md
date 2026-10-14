@@ -86,3 +86,9 @@ VITE_BIZ_NAME, VITE_BIZ_REP, VITE_BIZ_REG_NO, VITE_BIZ_ECOMM_NO, VITE_BIZ_ADDRES
 
 없으면 꺼져 있어요. `…/health` 의 `"alerts": true` 로 켜졌는지 보고, `…/health?test_alert=true` 로 시험 알림을 보낼 수 있어요.
 같은 오류는 10분에 한 번, 전체로 한 시간에 20개까지만 보내요.
+
+## Gemini 분당 한도(429) 대응
+
+Gemini 무료 등급은 분당·일일 요청 수가 제한돼요(숫자는 바뀌므로 AI Studio → 사용량/한도 화면에서 우리 프로젝트의 실제 값을 확인하세요).
+한도에 닿으면 `GEMINI_MODEL_FALLBACK`(기본 `gemini-2.5-flash-lite`)로 한 번 더 시도해요. 모델마다 한도가 따로 계산돼서 버틸 여유가 생겨요. 끄려면 빈 값으로 설정하세요.
+이용자가 늘면 Google AI Studio에서 결제(Tier 1)를 연결하는 것이 가장 확실한 해결책이에요.

@@ -73,6 +73,16 @@ except Exception as e:  # pragma: no cover
 # Google AI Studio (Gemini) 클라이언트
 # ---------------------------------------------------------------------------
 GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+# 분당 한도(429)에 걸리면 한도가 따로 계산되는 가벼운 모델로 한 번 더 시도해요. 끄려면 GEMINI_MODEL_FALLBACK= (빈 값)
+GEMINI_MODEL_FALLBACK = os.getenv("GEMINI_MODEL_FALLBACK", "gemini-2.5-flash-lite")
+
+
+def is_rate_limited(e: BaseException) -> bool:
+    """Gemini 가 '요청이 너무 많다(429)'고 답한 경우인지."""
+    if getattr(e, "code", None) == 429 or getattr(e, "status_code", None) == 429:
+        return True
+    t = str(e)
+    return "RESOURCE_EXHAUSTED" in t or t.lstrip().startswith("429")
 gemini_client = None
 gemini_api_key = os.getenv("GEMINI_API_KEY")
 
@@ -415,9 +425,19 @@ async def stream_reading(user_prompt: str, system_prompt: str) -> AsyncGenerator
     meta_buf = ""
     meta_started = False
 
-    stream = await gemini_client.aio.models.generate_content_stream(
-        model=GEMINI_MODEL, contents=user_prompt, config=config
-    )
+    try:
+        stream = await gemini_client.aio.models.generate_content_stream(
+            model=GEMINI_MODEL, contents=user_prompt, config=config
+        )
+    except Exception as e:
+        if not (is_rate_limited(e) and GEMINI_MODEL_FALLBACK and GEMINI_MODEL_FALLBACK != GEMINI_MODEL):
+            raise
+        logger.warning("Gemini 분당 한도(429) → %s 로 다시 시도", GEMINI_MODEL_FALLBACK)
+        stream = await gemini_client.aio.models.generate_content_stream(
+            model=GEMINI_MODEL_FALLBACK,
+            contents=user_prompt,
+            config=_gen_config(system_prompt, GEMINI_MODEL_FALLBACK, 0.9, 3000),
+        )
     async for chunk in stream:
         try:
             text = chunk.text or ""
@@ -451,9 +471,18 @@ async def generate_text(system: str, prompt: str, *, max_tokens: int = 700, temp
     if not gemini_client:
         raise RuntimeError("engine_unavailable")
     model = model or GEMINI_MODEL_PREMIUM
-    resp = await gemini_client.aio.models.generate_content(
-        model=model, contents=prompt, config=_gen_config(system, model, temperature, max_tokens)
-    )
+    try:
+        resp = await gemini_client.aio.models.generate_content(
+            model=model, contents=prompt, config=_gen_config(system, model, temperature, max_tokens)
+        )
+    except Exception as e:
+        if not (is_rate_limited(e) and GEMINI_MODEL_FALLBACK and GEMINI_MODEL_FALLBACK != model):
+            raise
+        logger.warning("Gemini 분당 한도(429) → %s 로 다시 시도", GEMINI_MODEL_FALLBACK)
+        resp = await gemini_client.aio.models.generate_content(
+            model=GEMINI_MODEL_FALLBACK, contents=prompt,
+            config=_gen_config(system, GEMINI_MODEL_FALLBACK, temperature, max_tokens),
+        )
     return (resp.text or "").strip()
 
 

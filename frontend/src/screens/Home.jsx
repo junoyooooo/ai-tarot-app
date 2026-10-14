@@ -4,6 +4,7 @@ import Mascot from '../components/Mascot';
 import CardFlip from '../components/CardFlip';
 import CoinChip from '../components/CoinChip';
 import Avatar from '../components/Avatar';
+import InstallBanner from '../components/InstallBanner';
 import { useWallet } from '../hooks/useWallet';
 import { useLook } from '../lib/look';
 import { recordCards } from '../lib/collection';
@@ -83,6 +84,8 @@ export default function Home({ profile, history, onStartConsult, onOpenEntry, on
       <h1 className="mt-1 text-[26px] font-extrabold tracking-tight text-ink leading-tight">
         {name}님, 안녕하세요
       </h1>
+
+      <InstallBanner historyCount={history?.length || 0} />
 
       {/* 상담 시작 배너 */}
       <button

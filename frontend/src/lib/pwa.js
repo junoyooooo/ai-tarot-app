@@ -39,6 +39,7 @@ export async function promptInstall() {
 
 export function initPwa() {
   if (typeof window === 'undefined') return;
+  countVisit();
   window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
     deferred = e;
@@ -53,5 +54,43 @@ export function initPwa() {
     window.addEventListener('load', () => {
       navigator.serviceWorker.register('/sw.js').catch(() => {});
     });
+  }
+}
+
+const VISITS = 'tarot.v1.visits';
+const SNOOZE = 'tarot.v1.installSnooze';
+
+/** 방문 횟수를 센다(앱을 연 날 기준으로 하루에 한 번). */
+export function countVisit() {
+  try {
+    const today = new Date().toDateString();
+    const v = JSON.parse(localStorage.getItem(VISITS) || '{"n":0,"d":""}');
+    if (v.d !== today) localStorage.setItem(VISITS, JSON.stringify({ n: (v.n || 0) + 1, d: today }));
+  } catch {
+    /* 저장이 막혀 있어도 괜찮아요 */
+  }
+}
+
+export function visitCount() {
+  try {
+    return JSON.parse(localStorage.getItem(VISITS) || '{}').n || 0;
+  } catch {
+    return 0;
+  }
+}
+
+export function snoozed() {
+  try {
+    return Date.now() < Number(localStorage.getItem(SNOOZE) || 0);
+  } catch {
+    return false;
+  }
+}
+
+export function snooze(days = 14) {
+  try {
+    localStorage.setItem(SNOOZE, String(Date.now() + days * 86400000));
+  } catch {
+    /* 무시 */
   }
 }

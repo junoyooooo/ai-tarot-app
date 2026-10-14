@@ -94,6 +94,20 @@ export default function Help({ onBack }) {
           </p>
         </Section>
 
+        <Section id="install" title="홈 화면에 앱처럼 설치하기" open={open === 'install'} onToggle={toggle}>
+          <p>별빛타로는 앱스토어 없이 홈 화면에 아이콘을 놓고 앱처럼 쓸 수 있어요. 무료이고 용량도 거의 차지하지 않아요.</p>
+          <p>
+            <b className="text-ink">안드로이드(크롬)</b>
+            <br />
+            내 정보 탭이나 홈의 안내에서 ‘설치’를 누르거나, 크롬 오른쪽 위 ⋮ 메뉴에서 ‘홈 화면에 추가’를 골라요.
+          </p>
+          <p>
+            <b className="text-ink">아이폰(사파리)</b>
+            <br />
+            아래쪽 공유 버튼을 누르고 ‘홈 화면에 추가’ → ‘추가’를 눌러요.
+          </p>
+          <p className="text-[13px] text-ink/70">카카오톡 안에서 연 화면에서는 설치가 안 돼요. 오른쪽 아래 ‘다른 브라우저로 열기’로 크롬·사파리에서 열어 주세요.</p>
+        </Section>
         <Section id="coin" title="코인과 요금" open={open === 'coin'} onToggle={toggle}>
           {!cfg?.paywall_enabled ? (
             <p>지금은 모든 기능을 무료로 이용할 수 있어요. 앞으로 일부 기능에 코인이 필요해질 수 있고, 그때는 미리 알려 드릴게요.</p>

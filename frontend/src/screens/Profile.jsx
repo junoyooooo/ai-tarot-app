@@ -4,6 +4,7 @@ import Avatar from '../components/Avatar';
 import { useLook } from '../lib/look';
 import Collection from '../components/Collection';
 import CoinChip from '../components/CoinChip';
+import InstallCard from '../components/InstallCard';
 import { useWallet } from '../hooks/useWallet';
 import { getAccount, logoutAccount, startKakaoLogin } from '../lib/auth';
 import GoogleButton from '../components/GoogleButton';
@@ -54,6 +55,10 @@ export default function Profile({ profile, historyCount, onProfileChange, onClea
         </div>
         <p className="mt-3 text-[20px] font-extrabold text-ink">{cleanName(profile.name)}님</p>
         <p className="mt-0.5 text-[13px] text-mute">지금까지 {historyCount}번 상담했어요</p>
+      </div>
+
+      <div className="mt-4 empty:hidden">
+        <InstallCard />
       </div>
 
       {(account || kakao?.enabled || google?.enabled) && (

@@ -114,3 +114,47 @@ def test_exchange_closed_when_paywall_off(client, env):
 
 def test_play_requires_device(client):
     assert client.get("/api/play/state").status_code == 400
+
+
+# ── 타로 RPG: 승패는 서버가 정한다 ──
+def rpg_full(client, h=None):
+    h = h or H()
+    r = client.post("/api/rpg/start", headers=h)
+    if r.status_code != 200:
+        return r, None
+    run = r.json()["run_id"]
+    for _ in range(60):
+        t = client.post("/api/rpg/turn", json={"run_id": run, "action": "card"}, headers=h).json()
+        if t["state"]["over"]:
+            return r, t
+    raise AssertionError("끝나지 않음")
+
+
+def test_rpg_finishes_and_rewards_within_cap(client):
+    _, t = rpg_full(client)
+    assert t["state"]["over"] in ("win", "lose")
+    assert t["gain"] == (3 if t["state"]["over"] == "win" else 1)
+    assert t["stardust"] == t["gain"]
+    assert t["earned_today"] <= t["daily_cap"]
+
+
+def test_rpg_daily_play_limit_and_no_turn_after_over(client):
+    _, t1 = rpg_full(client)
+    rpg_full(client)
+    r3, _ = rpg_full(client)
+    assert r3.status_code == 429
+    run = client.post("/api/rpg/start", headers=H("o" * 20)).json()["run_id"]
+    for _ in range(60):
+        t = client.post("/api/rpg/turn", json={"run_id": run, "action": "card"}, headers=H("o" * 20)).json()
+        if t["state"]["over"]:
+            break
+    again = client.post("/api/rpg/turn", json={"run_id": run, "action": "card"}, headers=H("o" * 20))
+    assert again.status_code == 400
+
+
+def test_rpg_run_belongs_to_device_and_flee_gives_nothing(client):
+    run = client.post("/api/rpg/start", headers=H("a" * 20)).json()["run_id"]
+    steal = client.post("/api/rpg/turn", json={"run_id": run, "action": "card"}, headers=H("b" * 20))
+    assert steal.status_code == 400
+    f = client.post("/api/rpg/turn", json={"run_id": run, "action": "flee"}, headers=H("a" * 20)).json()
+    assert f["state"]["over"] == "flee" and f["gain"] == 0

@@ -64,3 +64,7 @@ export const playExchange = () => request('/api/play/exchange', { method: 'POST'
 // 카드 보관함: 계급과 월간 스티커 (상담 수는 서버가 센다)
 export const fetchCardbox = () => request('/api/cardbox', { timeoutMs: 20000 });
 export const claimCardbox = () => request('/api/cardbox/claim', { method: 'POST', timeoutMs: 20000 });
+
+// 타로 RPG(걱정덩어리): 승패와 피해량은 서버가 정해요
+export const rpgStart = () => request('/api/rpg/start', { method: 'POST', timeoutMs: 20000 });
+export const rpgTurn = (run_id, action) => request('/api/rpg/turn', { method: 'POST', body: { run_id, action }, timeoutMs: 20000 });

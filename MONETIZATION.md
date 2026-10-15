@@ -42,6 +42,7 @@ VITE_BIZ_NAME, VITE_BIZ_REP, VITE_BIZ_REG_NO, VITE_BIZ_ECOMM_NO, VITE_BIZ_ADDRES
 | PLAY_PLAYS_PER_DAY | 2 | 하루 판 수 |
 | PLAY_DAILY_STARDUST | 6 | 하루 별가루 상한 (점수와 무관) |
 | PLAY_MIN_SECONDS | 15 | 한 판이 최소 이 시간 이상이어야 정산 |
+| RPG_PLAYS_PER_DAY | 2 | 타로 RPG(걱정덩어리 물리치기) 하루 판 수. 승패는 서버가 판정하고, 별가루는 별 게임과 같은 하루 상한(PLAY_DAILY_STARDUST)을 함께 써요 |
 | PLAY_EXCHANGE_COST | 30 | 별가루 → 코인 1개 교환 비용 (결제 기능이 켜졌을 때만, 기기당 주 1회) |
 | PLAY_EXCHANGE_PER_IP_WEEKLY | 2 | 같은 네트워크에서 주당 교환 가능 횟수 |
 - 아이템 목록·가격: backend/play.py, 그림: frontend/src/lib/items.jsx (같은 id), 마스코트별 착용 위치: frontend/src/lib/mascotAnchors.js

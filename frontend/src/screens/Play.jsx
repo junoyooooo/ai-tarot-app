@@ -3,6 +3,7 @@ import { ChevronLeft } from 'lucide-react';
 import Avatar from '../components/Avatar';
 import Mascot from '../components/Mascot';
 import StarGame from '../components/StarGame';
+import RpgGame from '../components/RpgGame';
 import { ITEM_ART, ITEM_PREVIEW_BOX, SLOTS, SLOT_LABEL } from '../lib/items';
 import { ANCHORS } from '../lib/mascotAnchors';
 import { fetchPlay, playBuy, playEquip, playExchange } from '../lib/api';
@@ -34,6 +35,7 @@ export default function Play({ onBack }) {
   const [pending, setPending] = useState(null); // 사려고 누른 아이템 id
   const [busy, setBusy] = useState(false);
   const [game, setGame] = useState(false);
+  const [rpg, setRpg] = useState(false);
   const [msg, setMsg] = useState('');
   const col = useMemo(() => getCollection(), []);
 
@@ -146,6 +148,28 @@ export default function Play({ onBack }) {
         </div>
         <p className="mt-3 text-[17px] font-extrabold text-ink">{mainCard ? getKoName(mainCard) : '운명이'}</p>
         <p className="text-[12px] text-mute">나의 대표 운명이</p>
+      </div>
+
+      {/* 걱정덩어리 물리치기 (타로 RPG) */}
+      <div className="mt-4 rounded-[24px] bg-gradient-to-br from-[#5b3a9a] to-[#b04a9a] text-white p-5 flex items-center gap-4">
+        <div className="flex-1 min-w-0">
+          <p className="text-[17px] font-extrabold">
+            걱정덩어리 물리치기 <span className="ml-1 align-middle text-[11px] font-bold bg-white/20 rounded-full px-2 py-0.5">타로 RPG</span>
+          </p>
+          <p className="mt-1 text-[12.5px] text-white/75 break-keep">
+            {data.earned_today >= data.daily_cap
+              ? `오늘 별가루를 모두 모았어요 (${data.earned_today}/${data.daily_cap})`
+              : `오늘 남은 판 ${data.rpg_plays_left ?? 0}번 · 별가루 ${data.earned_today}/${data.daily_cap}`}
+          </p>
+        </div>
+        <button
+          type="button"
+          disabled={(data.rpg_plays_left ?? 0) <= 0}
+          onClick={() => setRpg(true)}
+          className="shrink-0 bg-white text-[#3a2a7a] font-extrabold text-[14px] rounded-full px-5 py-2.5 cursor-pointer disabled:opacity-50 active:scale-95 transition-transform"
+        >
+          {(data.rpg_plays_left ?? 0) <= 0 ? '내일 또!' : '도전하기'}
+        </button>
       </div>
 
       {/* 별똥별 받기 */}
@@ -294,6 +318,8 @@ export default function Play({ onBack }) {
           {msg}
         </div>
       )}
+
+      {rpg && <RpgGame main={mainId} equipped={data.equipped} onClose={() => setRpg(false)} onDone={(t) => apply({ ...data, ...t })} />}
 
       {game && (
         <StarGame

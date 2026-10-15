@@ -153,6 +153,14 @@ CREATE TABLE IF NOT EXISTS play_runs (
     started_at REAL NOT NULL,
     claimed INTEGER NOT NULL DEFAULT 0
 );
+CREATE TABLE IF NOT EXISTS rpg_runs (
+    run_id TEXT PRIMARY KEY,
+    device_id TEXT NOT NULL,
+    day TEXT NOT NULL,
+    state_json TEXT NOT NULL,
+    updated_at REAL NOT NULL,
+    claimed INTEGER NOT NULL DEFAULT 0
+);
 CREATE TABLE IF NOT EXISTS exchange_grants (
     ip_hash TEXT NOT NULL,
     week TEXT NOT NULL
@@ -548,6 +556,48 @@ class Store:
                 self._play_row(c, device_id)
                 c.execute("UPDATE play_state SET stardust = stardust + ? WHERE device_id=?", (gain, device_id))
             return {"gain": gain, "capped": gain < want}
+
+    def rpg_plays_today(self, device_id: str, day: str) -> int:
+        with self._tx() as c:
+            return self._count(c, device_id, day, "rpg_play")
+
+    def rpg_start(self, device_id: str, day: str, run_id: str, max_plays: int, state: Dict[str, Any]) -> bool:
+        """RPG 한 판을 시작한다. 시작하면 오늘 판 수가 하나 줄어든다(중간에 나가도 그대로)."""
+        with self._tx() as c:
+            if self._count(c, device_id, day, "rpg_play") >= max_plays:
+                return False
+            self._bump(c, device_id, day, "rpg_play", 1)
+            c.execute(
+                "INSERT INTO rpg_runs(run_id, device_id, day, state_json, updated_at) VALUES (?,?,?,?,?)",
+                (run_id, device_id, day, json.dumps(state), time.time()),
+            )
+            return True
+
+    def rpg_turn(self, device_id: str, day: str, run_id: str, daily_cap: int, rewards: Dict[str, int], step_fn) -> Dict[str, Any]:
+        """저장된 상태로 한 턴을 서버에서 진행한다. 끝나면 보상을 한 번만, 하루 상한 안에서 준다."""
+        with self._tx() as c:
+            row = c.execute("SELECT * FROM rpg_runs WHERE run_id=? AND device_id=?", (run_id, device_id)).fetchone()
+            if row is None or row["day"] != day:
+                return {"error": "unknown_run"}
+            state = json.loads(row["state_json"])
+            if state.get("over"):
+                return {"error": "over"}
+            state, log = step_fn(state)
+            gain = 0
+            want = 0
+            if state.get("over") and not row["claimed"]:
+                want = int(rewards.get(state["over"], 0))
+                earned = self._count(c, device_id, day, "stardust")
+                gain = max(0, min(want, daily_cap - earned))
+                if gain:
+                    self._bump(c, device_id, day, "stardust", gain)
+                    self._play_row(c, device_id)
+                    c.execute("UPDATE play_state SET stardust = stardust + ? WHERE device_id=?", (gain, device_id))
+            c.execute(
+                "UPDATE rpg_runs SET state_json=?, updated_at=?, claimed=? WHERE run_id=?",
+                (json.dumps(state), time.time(), 1 if state.get("over") else row["claimed"], run_id),
+            )
+            return {"state": state, "log": log, "gain": gain, "capped": bool(want and gain < want)}
 
     def play_buy(self, device_id: str, item_id: str, price: int) -> str:
         """'ok' | 'owned' | 'poor'"""

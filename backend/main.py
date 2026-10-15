@@ -684,6 +684,7 @@ def _play_payload(did: str) -> dict:
         "equipped": {k: v for k, v in st["equipped"].items() if v in st["items"]},
         "main": st["main_mascot"],
         "plays_left": max(0, PLAY_PLAYS_PER_DAY - st["plays_today"]),
+        "rpg_plays_left": max(0, RPG_PLAYS_PER_DAY - STORE.rpg_plays_today(did, day)),
         "earned_today": st["earned_today"],
         "daily_cap": PLAY_DAILY_STARDUST,
         "exchange_used_this_week": st["last_exchange_week"] == week,
@@ -760,6 +761,39 @@ def play_claim(body: PlayClaim, request: Request):
 
 class PlayBuy(BaseModel):
     item_id: str = Field(..., max_length=40)
+
+
+RPG_PLAYS_PER_DAY = _env_int("RPG_PLAYS_PER_DAY", 2)
+
+
+@app.post("/api/rpg/start")
+def rpg_start(request: Request):
+    did = _play_guard(request)
+    run_id = uuid.uuid4().hex
+    st = play.rpg_new_state()
+    if not STORE.rpg_start(did, today_kst(), run_id, RPG_PLAYS_PER_DAY, st):
+        raise api_error(429, "play_limit", "오늘 걱정덩어리는 모두 물리쳤어요. 내일 또 만나요!")
+    return {"run_id": run_id, "state": st, "deck": {str(k): {"name": v[0], "kind": v[1], "desc": v[4]} for k, v in play.RPG_DECK.items()}}
+
+
+class RpgTurn(BaseModel):
+    run_id: str = Field(..., min_length=8, max_length=64)
+    action: str = Field(..., pattern="^(card|flee)$")
+
+
+@app.post("/api/rpg/turn")
+def rpg_turn(body: RpgTurn, request: Request):
+    did = _play_guard(request)
+    rng = random.SystemRandom()
+    res = STORE.rpg_turn(
+        did, today_kst(), body.run_id, PLAY_DAILY_STARDUST, play.RPG_REWARD, lambda s: play.rpg_turn(s, body.action, rng)
+    )
+    if "error" in res:
+        raise api_error(400, res["error"], "이 판은 더 진행할 수 없어요.")
+    out = {"state": res["state"], "log": res["log"], "gain": res["gain"], "capped": res["capped"]}
+    if res["state"].get("over"):
+        out.update(_play_payload(did))
+    return out
 
 
 @app.post("/api/play/buy")

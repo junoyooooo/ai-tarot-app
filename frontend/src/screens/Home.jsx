@@ -11,6 +11,7 @@ import { recordCards } from '../lib/collection';
 import { playSfx } from '../lib/sound';
 import { upcomingSpecial } from '../lib/specialDays';
 import { CATEGORIES, categoryByKey } from '../lib/categories';
+import CheerShare from '../components/CheerShare';
 import { getDaily, saveDaily, todayKey } from '../lib/storage';
 import { getDailyCard, getDailyMessage, getKoName, TAROT_CARDS, cleanName } from '../tarotData';
 
@@ -150,6 +151,7 @@ export default function Home({ profile, history, onStartConsult, onOpenEntry, on
               <p className="mt-0.5 text-[20px] font-extrabold text-ink break-keep">{getKoName(card)}</p>
               <p className="mt-1.5 text-[13px] leading-relaxed text-ink/80 line-clamp-5 break-keep">{getDailyMessage(card.id, name)}</p>
               <p className="mt-2 text-[11.5px] text-ink/45">카드를 누르면 다시 뒤집어 볼 수 있어요</p>
+              <CheerShare card={card} dateKey={today} />
             </div>
           ) : flipped || replaying ? (
             <p className="text-[14px] font-bold text-[#a8385e] animate-pulse">카드가 이야기를 들려주려 해요…</p>

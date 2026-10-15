@@ -145,6 +145,9 @@ def _start_digest() -> None:
 
 def install() -> None:
     """루트 로거에 핸들러를 한 번만 붙인다."""
+    # httpx 가 요청 주소를 INFO 로그로 남기는데, 텔레그램 주소에는 봇 토큰이 들어 있어요. 로그에 새지 않게 막아요.
+    logging.getLogger("httpx").setLevel(logging.WARNING)
+    logging.getLogger("httpcore").setLevel(logging.WARNING)
     root = logging.getLogger()
     if any(isinstance(h, TelegramHandler) for h in root.handlers):
         return

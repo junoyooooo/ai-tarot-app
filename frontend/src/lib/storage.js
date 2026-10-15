@@ -1,12 +1,13 @@
 // 브라우저(localStorage)에 프로필·기록·오늘의 카드를 저장합니다.
 // 시크릿 모드나 저장소가 막힌 환경에서도 앱이 죽지 않게 모든 접근을 try/catch로 감쌉니다.
 
-const PREFIX = 'tarot.v1.';
+import { keyPrefix } from './people';
+
 const MAX_HISTORY = 100;
 
 function read(key, fallback) {
   try {
-    const raw = window.localStorage.getItem(PREFIX + key);
+    const raw = window.localStorage.getItem(keyPrefix() + key);
     return raw ? JSON.parse(raw) : fallback;
   } catch {
     return fallback;
@@ -15,7 +16,7 @@ function read(key, fallback) {
 
 function write(key, value) {
   try {
-    window.localStorage.setItem(PREFIX + key, JSON.stringify(value));
+    window.localStorage.setItem(keyPrefix() + key, JSON.stringify(value));
     return true;
   } catch {
     return false;
@@ -51,7 +52,11 @@ export const saveDaily = (daily) => write('daily', daily);
 
 export function clearAll() {
   try {
-    ['profile', 'history', 'daily', 'collection', 'memos', 'cardbox'].forEach((k) => window.localStorage.removeItem(PREFIX + k));
+    ['profile', 'history', 'daily', 'collection', 'memos', 'cardbox', 'look'].forEach((k) => window.localStorage.removeItem('tarot.v1.' + k));
+    // 함께 저장된 가족·친구 프로필도 지워요
+    Object.keys(window.localStorage)
+      .filter((k) => k.startsWith('tarot.v1.p_') || k === 'tarot.v1.people' || k === 'tarot.v1.activePerson')
+      .forEach((k) => window.localStorage.removeItem(k));
     // 기기 ID(device)는 코인과 연결돼 있어 일부러 지우지 않습니다.
   } catch {
     /* 무시 */

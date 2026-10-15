@@ -7,6 +7,8 @@ import { ITEM_ART, ITEM_PREVIEW_BOX, SLOTS, SLOT_LABEL } from '../lib/items';
 import { ANCHORS } from '../lib/mascotAnchors';
 import { fetchPlay, playBuy, playEquip, playExchange } from '../lib/api';
 import { getCollection } from '../lib/collection';
+import { getActiveId } from '../lib/people';
+import { getLook } from '../lib/look';
 import { setLook } from '../lib/look';
 import { playSfx } from '../lib/sound';
 import { useWallet } from '../hooks/useWallet';
@@ -36,8 +38,14 @@ export default function Play({ onBack }) {
   const col = useMemo(() => getCollection(), []);
 
   const apply = useCallback((d) => {
+    if (getActiveId() !== 'me') {
+      // 가족·친구 프로필은 대표 캐릭터와 착용을 이 기기에 따로 저장해요. 별가루·구매한 아이템은 함께 써요.
+      const mine = getLook();
+      d = { ...d, main: mine.main, equipped: mine.equipped };
+    } else {
+      setLook({ main: d.main, equipped: d.equipped });
+    }
     setData(d);
-    setLook({ main: d.main, equipped: d.equipped });
     wallet?.applyWallet?.({ coins: d.coins });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -69,7 +77,8 @@ export default function Play({ onBack }) {
       setLook({ main: next.main, equipped: next.equipped });
     } else setBusy(true);
     try {
-      const d = await fn();
+      const d = getActiveId() !== 'me' && optimistic ? { ...prev, ...optimistic } : await fn();
+      if (getActiveId() !== 'me' && optimistic) setLook({ main: d.main, equipped: d.equipped });
       if (my === seq.current) apply(d); // 더 최근 선택이 있으면 이 응답은 건너뛰어요
       if (okMsg) flash(okMsg);
       return true;

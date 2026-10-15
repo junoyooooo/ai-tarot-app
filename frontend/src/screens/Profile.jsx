@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ChevronRight } from 'lucide-react';
 import Avatar from '../components/Avatar';
 import { useLook } from '../lib/look';
+import PeopleSection from '../components/PeopleSection';
 import Collection from '../components/Collection';
 import CoinChip from '../components/CoinChip';
 import InstallCard from '../components/InstallCard';
@@ -56,6 +57,8 @@ export default function Profile({ profile, historyCount, onProfileChange, onClea
         <p className="mt-3 text-[20px] font-extrabold text-ink">{cleanName(profile.name)}님</p>
         <p className="mt-0.5 text-[13px] text-mute">지금까지 {historyCount}번 상담했어요</p>
       </div>
+
+      <PeopleSection />
 
       <div className="mt-4 empty:hidden">
         <InstallCard />

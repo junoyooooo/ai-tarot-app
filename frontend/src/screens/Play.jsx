@@ -57,19 +57,31 @@ export default function Play({ onBack }) {
     setTimeout(() => setMsg(''), 2600);
   };
 
-  const act = async (fn, okMsg) => {
-    if (busy) return;
-    setBusy(true);
+  const seq = React.useRef(0);
+  // optimistic: 서버 응답을 기다리지 않고 화면·기기 기록을 먼저 바꿔요. 실패하면 되돌려요.
+  const act = async (fn, okMsg, optimistic) => {
+    if (busy && !optimistic) return;
+    const prev = data;
+    const my = ++seq.current;
+    if (optimistic && prev) {
+      const next = { ...prev, ...optimistic };
+      setData(next);
+      setLook({ main: next.main, equipped: next.equipped });
+    } else setBusy(true);
     try {
       const d = await fn();
-      apply(d);
+      if (my === seq.current) apply(d); // 더 최근 선택이 있으면 이 응답은 건너뛰어요
       if (okMsg) flash(okMsg);
       return true;
     } catch (e) {
+      if (my === seq.current && prev) {
+        setData(prev);
+        setLook({ main: prev.main, equipped: prev.equipped });
+      }
       flash(e.message || '잠시 후 다시 시도해 주세요.');
       return false;
     } finally {
-      setBusy(false);
+      if (!optimistic) setBusy(false);
     }
   };
 
@@ -103,7 +115,7 @@ export default function Play({ onBack }) {
     if (next[slot] === id) delete next[slot];
     else next[slot] = id;
     playSfx('pick');
-    act(() => playEquip(next, mainId));
+    act(() => playEquip(next, mainId), null, { equipped: next });
   };
 
   return (
@@ -232,12 +244,12 @@ export default function Play({ onBack }) {
             <li key={c.id}>
               <button
                 type="button"
-                disabled={!seen || busy}
+                disabled={!seen}
                 aria-label={seen ? getKoName(c) : '아직 만나지 못한 친구'}
                 aria-pressed={on}
                 onClick={() => {
                   playSfx('pick');
-                  act(() => playEquip(data.equipped, c.id));
+                  act(() => playEquip(data.equipped, c.id), null, { main: c.id });
                 }}
                 className={`w-full aspect-square rounded-[16px] flex items-center justify-center cursor-pointer ${on ? 'bg-brand-100 ring-2 ring-brand-500' : seen ? 'bg-brand-50' : 'bg-[#f2f0f8]'}`}
               >

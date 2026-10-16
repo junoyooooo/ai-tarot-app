@@ -171,6 +171,20 @@ export default function Help({ onBack }) {
           </Section>
         )}
 
+        {cfg?.retention?.enabled && (
+          <Section id="streak" title="연속 출석·초대·알림" open={open === 'streak'} onToggle={toggle}>
+            <p>오늘의 카드를 뽑으면 하루에 한 번 출석이 기록되고, 별가루를 받아요.</p>
+            <ul className="mt-2 list-disc pl-5 space-y-1">
+              <li>매일 ⭐ 1개. 연속 3일째 +1, 7일째 +3, 14일째 +4, 30일째 +8을 더 받아요.</li>
+              <li>하루를 건너뛰면 연속 기록이 1일부터 다시 시작돼요.</li>
+              <li>새달·보름달 날(근사 계산이라 실제와 하루쯤 차이 날 수 있어요)에는 ⭐ 2개를 더 받아요.</li>
+              <li>홈에는 주마다 바뀌는 시즌 안내(새싹·달빛·하트·별빛 주간)와 어울리는 상담을 알려 드려요.</li>
+              <li>친구 초대: 내 링크로 친구가 처음 시작하면 둘 다 ⭐ {cfg.retention.invite_bonus}개. 친구는 처음 접속하고 일주일 안에만 코드를 쓸 수 있고, 초대는 한 주에 최대 5명까지 보상돼요.</li>
+              {cfg.retention.push && <li>알림: 내 정보에서 켜면 하루 한 번 아침에 “오늘의 카드가 도착했어요” 알림을 보내요. 아이폰은 홈 화면에 설치한 뒤에 켤 수 있어요.</li>}
+            </ul>
+          </Section>
+        )}
+
         <Section id="faq" title="자주 묻는 질문" open={open === 'faq'} onToggle={toggle}>
           <dl className="space-y-3.5">
             {FAQ.map(([q, a]) => (

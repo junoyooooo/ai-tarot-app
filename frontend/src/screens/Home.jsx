@@ -30,7 +30,7 @@ function formatShort(ts) {
   return `${d.getMonth() + 1}/${d.getDate()}`;
 }
 
-export default function Home({ profile, history, onStartConsult, onOpenEntry, onGoHistory, onOpenPlay }) {
+export default function Home({ profile, history, onStartConsult, onOpenEntry, onGoHistory, onOpenPlay, onOpenProfile }) {
   const wallet = useWallet();
   const look = useLook();
   const today = todayKey();
@@ -217,6 +217,19 @@ export default function Home({ profile, history, onStartConsult, onOpenEntry, on
       </div>
 
       <StreakCard ret={ret} onStartConsult={onStartConsult} />
+      {retOn && (
+        <button
+          type="button"
+          onClick={onOpenProfile}
+          className="mt-3 w-full rounded-[20px] bg-brand-50 px-4 py-3 flex items-center gap-2.5 text-left cursor-pointer active:scale-[0.99] transition-transform"
+        >
+          <span className="text-[18px]" aria-hidden="true">🎁</span>
+          <span className="flex-1 min-w-0 text-[13px] font-bold text-ink break-keep">
+            친구를 초대하면 둘 다 별가루 {wallet?.config?.retention?.invite_bonus ?? 5}개!
+          </span>
+          <ChevronRight className="w-4 h-4 text-brand-600 shrink-0" aria-hidden="true" />
+        </button>
+      )}
 
       {/* 고민 종류 */}
       <h2 className="mt-8 mb-3 text-[19px] font-extrabold text-ink">어떤 고민이 있어요?</h2>

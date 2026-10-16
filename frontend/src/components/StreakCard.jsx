@@ -19,7 +19,7 @@ export default function StreakCard({ ret, onStartConsult }) {
         </div>
         {dust && (
           <span className="shrink-0 rounded-full bg-[#fff1c9] text-[#a8700b] text-[12px] font-bold px-3 py-1.5">
-            {done ? '오늘 받았어요 ✓' : `오늘 ⭐ +${reward}${lunar ? ` (+${lunar.bonus})` : ''}`}
+            {done ? '오늘 받았어요 ✓' : `오늘 ⭐ +${reward + (lunar ? lunar.bonus : 0)}${lunar ? ` · ${lunar.name} 보너스 포함` : ''}`}
           </span>
         )}
       </div>
@@ -33,6 +33,9 @@ export default function StreakCard({ ret, onStartConsult }) {
           {ms.day}일 연속까지 {ms.left}일 남았어요{dust ? ` · 보너스 ⭐ +${ms.bonus}` : ''}
         </p>
       )}
+      <p className="mt-1 text-[11.5px] text-mute/80 break-keep">
+        하루를 건너뛰면 1일부터 다시 시작해요{dust ? ' · ⭐ 별가루는 운명이 꾸미기와 코인 교환에 써요' : ''}
+      </p>
       {(lunar || season) && (
         <div className="mt-3 rounded-2xl bg-brand-50 px-3.5 py-3">
           <p className="text-[12.5px] font-bold text-ink">

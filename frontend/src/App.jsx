@@ -130,6 +130,7 @@ export default function App() {
             }}
             onGoHistory={() => goTab('history')}
             onOpenPlay={() => goTab('play')}
+            onOpenProfile={() => goTab('profile')}
           />
         )}
 

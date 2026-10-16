@@ -72,15 +72,18 @@ def yesterday_of(day: str) -> str:
 
 
 def push_message(streak: int, checked_today: bool, day: str) -> Dict[str, str]:
+    """알림 문구: 열어 보고 싶어지는 짧은 한 줄. 날마다 다른 문구가 돌아가요."""
     lunar = lunar_event(day)
     if lunar:
-        return {"title": f"{lunar['emoji']} 오늘은 {lunar['name']}이에요", "body": f"카드 한 장 뽑고 별가루 {lunar['bonus']}개 더 받아가세요."}
+        return {"title": f"{lunar['emoji']} 오늘은 {lunar['name']}이에요", "body": f"카드 한 장 뽑으면 별가루 {lunar['bonus']}개를 더 드려요. 지금 확인해 보세요!"}
     if streak >= 2 and not checked_today:
-        return {"title": f"🔥 {streak}일 연속 중이에요", "body": "오늘의 카드를 뽑으면 연속 기록이 이어져요."}
+        return {"title": f"🔥 {streak}일 연속 중이에요!", "body": "오늘 카드를 뽑지 않으면 기록이 끊겨요. 지금 이어가세요."}
     options = [
-        ("🔮 오늘의 카드가 도착했어요", "토닥토닥 별빛타로가 오늘 하루를 응원해요."),
-        ("✨ 카드 한 장, 확인해 볼까요?", "오늘의 한마디가 기다리고 있어요."),
-        ("🌙 마음에 걸리는 일 있나요?", "카드에게 가볍게 물어보세요."),
+        ("🔮 오늘의 카드가 뒤집히길 기다리고 있어요", "지금 한 장 뽑고 오늘의 한마디를 확인해 보세요."),
+        ("✨ 오늘은 어떤 카드가 나올까요?", "눌러서 확인하고 별가루도 받아가세요."),
+        ("🌙 마음에 걸리는 일 있어요?", "카드 한 장이 작은 힌트를 줄지도 몰라요."),
+        ("💌 오늘의 한마디가 도착했어요", "열어 보고 하루를 가볍게 시작해 보세요."),
+        ("🍀 오늘의 행운 카드, 지금 확인!", "30초면 끝나요. 별가루 보상도 있어요."),
     ]
     t, b = options[date.fromisoformat(day).toordinal() % len(options)]
     return {"title": t, "body": b}

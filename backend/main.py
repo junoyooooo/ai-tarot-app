@@ -884,7 +884,10 @@ async def push_send_daily(request: Request):
     subs = await run_in_threadpool(STORE.push_due, day, 500)
     sent = dead = failed = 0
     for sub in subs:
-        msg = retention.push_message(sub["streak"], sub["last_day"] == day, day)
+        if sub["last_day"] == day:  # 오늘 이미 카드를 뽑은 사람에게는 보내지 않아요
+            await run_in_threadpool(STORE.push_mark, sub["endpoint"], day, False)
+            continue
+        msg = retention.push_message(sub["streak"], False, day)
         payload = json.dumps({**msg, "url": "/"}, ensure_ascii=False)
         res = await run_in_threadpool(_send_one_push, sub, payload)
         if res == "fail":

@@ -55,7 +55,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
     # Vercel 프리뷰 배포(ai-tarot-app-xxxx.vercel.app)도 허용
-    allow_origin_regex=r"https://ai-tarot-app[a-z0-9\-]*\.vercel\.app",
+    allow_origin_regex=r"https://ai-tarot-app[a-z0-9\-]*\.vercel\.app|https://todac-tarot\.(private-)?apps\.tossmini\.com",
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],

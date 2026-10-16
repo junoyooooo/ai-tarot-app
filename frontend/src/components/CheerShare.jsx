@@ -3,6 +3,7 @@ import { Send, X, Share2, Camera } from 'lucide-react';
 import { toCanvas } from 'html-to-image';
 import QRCodeStyling from 'qr-code-styling';
 import { SHARE_LINK, SHARE_DISPLAY } from '../lib/share';
+import { refLink } from '../lib/retention';
 import { track } from '../lib/analytics';
 import { cheerLine } from '../lib/cheer';
 import { getKoName } from '../tarotData';
@@ -54,7 +55,7 @@ export default function CheerShare({ card, dateKey }) {
     if (!open || qr) return;
     (async () => {
       try {
-        const code = new QRCodeStyling({ width: 256, height: 256, type: 'canvas', data: LINK, margin: 0, qrOptions: { errorCorrectionLevel: 'M' }, dotsOptions: { color: '#2a1457', type: 'square' }, backgroundOptions: { color: '#ffffff' } });
+        const code = new QRCodeStyling({ width: 256, height: 256, type: 'canvas', data: refLink(LINK), margin: 0, qrOptions: { errorCorrectionLevel: 'M' }, dotsOptions: { color: '#2a1457', type: 'square' }, backgroundOptions: { color: '#ffffff' } });
         const blob = await code.getRawData('png');
         const fr = new FileReader();
         fr.onload = () => setQr(String(fr.result));
@@ -86,7 +87,7 @@ export default function CheerShare({ card, dateKey }) {
       track(mode === 'save' ? 'cheer_save' : 'cheer_share');
       if (mode === 'share' && navigator.canShare?.({ files: [file] })) {
         try {
-          await navigator.share({ files: [file], text: `${line}\n\n나도 오늘의 카드 뽑기 👉 ${LINK}` });
+          await navigator.share({ files: [file], text: `${line}\n\n나도 오늘의 카드 뽑기 👉 ${refLink(LINK)}` });
           return;
         } catch (e) {
           if (e?.name === 'AbortError') return;

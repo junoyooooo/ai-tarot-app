@@ -4,6 +4,7 @@ import { toCanvas } from 'html-to-image';
 import QRCodeStyling from 'qr-code-styling';
 import { SHARE_LINK, SHARE_DISPLAY, copyText } from '../lib/share';
 import { track } from '../lib/analytics';
+import { refLink } from '../lib/retention';
 import { getKoName, cleanName } from '../tarotData';
 
 const CAPTURE_BG = '#f4e9ff';
@@ -87,6 +88,7 @@ export default function ShareActions({ name, cards, summary, hashtags }) {
   const [previewImg, setPreviewImg] = useState(null);
   const [qr, setQr] = useState('');
   const [copied, setCopied] = useState(false);
+  const [copiedText, setCopiedText] = useState(false);
 
   const displayName = cleanName(name);
   const tags = hashtags && hashtags.length ? hashtags : ['#오늘의타로', '#마음의소리', '#작은위로'];
@@ -102,7 +104,7 @@ export default function ShareActions({ name, cards, summary, hashtags }) {
           width: 256,
           height: 256,
           type: 'canvas',
-          data: SHARE_LINK,
+          data: refLink(),
           margin: 0,
           qrOptions: { errorCorrectionLevel: 'M' },
           dotsOptions: { color: '#2a1457', type: 'square' },
@@ -123,10 +125,10 @@ export default function ShareActions({ name, cards, summary, hashtags }) {
     };
   }, []);
 
-  const shareText = `${summaryText}\n\n나도 타로 보기 👉 ${SHARE_LINK}`;
+  const shareText = `${summaryText}\n\n나도 타로 보기 👉 ${refLink()}`;
 
   const copyLink = async () => {
-    const ok = await copyText(SHARE_LINK);
+    const ok = await copyText(refLink());
     track('share_copy_link');
     if (ok) {
       setCopied(true);
@@ -161,7 +163,7 @@ export default function ShareActions({ name, cards, summary, hashtags }) {
       document.body.removeChild(a);
       setTimeout(() => URL.revokeObjectURL(url), 2000);
     }, 'image/png');
-    copyText(SHARE_LINK); // 스토리 링크 스티커에 바로 붙여 넣을 수 있게 주소를 미리 복사(브라우저가 막으면 버튼으로 복사)
+    copyText(refLink()); // 스토리 링크 스티커에 바로 붙여 넣을 수 있게 주소를 미리 복사(브라우저가 막으면 버튼으로 복사)
     setPreviewImg(dataUrl); // 모바일은 직접 저장이 막히는 경우가 있어 '꾹 눌러 저장' 안내도 함께 띄움
   };
 
@@ -234,8 +236,23 @@ export default function ShareActions({ name, cards, summary, hashtags }) {
 
       <button
         type="button"
+        onClick={async () => {
+          track('share_copy_text');
+          if (await copyText(shareText)) {
+            setCopiedText(true);
+            setTimeout(() => setCopiedText(false), 2200);
+          }
+        }}
+        className="mt-1 w-full flex items-center justify-center gap-1.5 text-[13px] font-semibold text-brand-700 py-2 cursor-pointer"
+      >
+        {copiedText ? <Check className="w-4 h-4" aria-hidden="true" /> : <Share2 className="w-4 h-4" aria-hidden="true" />}
+        {copiedText ? '글을 복사했어요. 붙여 넣어 보내세요' : '결과 한 줄 + 링크 복사'}
+      </button>
+
+      <button
+        type="button"
         onClick={copyLink}
-        className="mt-2.5 w-full flex items-center justify-center gap-1.5 text-[13px] font-semibold text-brand-700 py-2 cursor-pointer"
+        className="mt-1 w-full flex items-center justify-center gap-1.5 text-[13px] font-semibold text-brand-700 py-2 cursor-pointer"
       >
         {copied ? <Check className="w-4 h-4" aria-hidden="true" /> : <Link2 className="w-4 h-4" aria-hidden="true" />}
         {copied ? '주소를 복사했어요' : `앱 주소 복사 · ${SHARE_DISPLAY}`}

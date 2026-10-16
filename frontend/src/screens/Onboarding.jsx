@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { track } from '../lib/analytics';
 import { ArrowRight } from 'lucide-react';
 import Mascot from '../components/Mascot';
 import { validateBirthdate } from '../lib/storage';
@@ -28,6 +29,9 @@ export default function Onboarding({ onDone }) {
   const [step, setStep] = useState(1); // 0번 화면은 Welcome 타이틀이 대신해요
   const [form, setForm] = useState({ name: '', birthdate: '' });
   const [error, setError] = useState('');
+  useEffect(() => {
+    track('funnel', { step: `onboarding_${step}` }); // 첫 카드를 뽑기까지 어디서 이탈하는지 보려고요
+  }, [step]);
 
   const submit = (e) => {
     e.preventDefault();
@@ -35,6 +39,7 @@ export default function Onboarding({ onDone }) {
     if (!name) return setError('이름이나 별명을 입력해 주세요.');
     const birthError = validateBirthdate(form.birthdate);
     if (birthError) return setError(birthError);
+    track('funnel', { step: 'onboarding_done' });
     onDone({ name, birthdate: form.birthdate });
   };
 

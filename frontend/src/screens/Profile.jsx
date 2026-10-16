@@ -6,6 +6,8 @@ import PeopleSection from '../components/PeopleSection';
 import Collection from '../components/Collection';
 import CoinChip from '../components/CoinChip';
 import InstallCard from '../components/InstallCard';
+import InviteCard from '../components/InviteCard';
+import PushCard from '../components/PushCard';
 import { useWallet } from '../hooks/useWallet';
 import { getAccount, logoutAccount, startKakaoLogin } from '../lib/auth';
 import GoogleButton from '../components/GoogleButton';
@@ -63,6 +65,9 @@ export default function Profile({ profile, historyCount, onProfileChange, onClea
       <div className="mt-4 empty:hidden">
         <InstallCard />
       </div>
+
+      <PushCard />
+      <InviteCard />
 
       {(account || kakao?.enabled || google?.enabled) && (
         <div className="mt-4 rounded-[22px] bg-white shadow-soft px-5 py-4">

@@ -14,7 +14,7 @@
 
 주의: sandbox 는 운영에서 절대 켜지 마세요. 위기(109) 응답은 어떤 경우에도 잠기거나 유료가 되지 않습니다.
 개발용: `python backend/dev_fake_llm.py` (API 키 없이 화면 확인), 테스트: `pip install -r backend/requirements-dev.txt && pytest backend`.
-미구현(추후): 카카오 로그인, 친구 초대 코인, 월간 리포트.
+미구현(추후): 월간 리포트.
 
 ## 공유·분석 설정 (프론트엔드, Vercel 환경변수)
 - VITE_SHARE_URL: 공유 이미지 QR·주소·공유 글에 들어가는 앱 주소 (도메인/짧은 주소로 바꾸면 여기만 수정)
@@ -93,3 +93,17 @@ VITE_BIZ_NAME, VITE_BIZ_REP, VITE_BIZ_REG_NO, VITE_BIZ_ECOMM_NO, VITE_BIZ_ADDRES
 Gemini 무료 등급은 분당·일일 요청 수가 제한돼요(숫자는 바뀌므로 AI Studio → 사용량/한도 화면에서 우리 프로젝트의 실제 값을 확인하세요).
 한도에 닿으면 `GEMINI_MODEL_FALLBACK`(기본 `gemini-2.5-flash-lite`)로 한 번 더 시도해요. 모델마다 한도가 따로 계산돼서 버틸 여유가 생겨요. 끄려면 빈 값으로 설정하세요.
 이용자가 늘면 Google AI Studio에서 결제(Tier 1)를 연결하는 것이 가장 확실한 해결책이에요.
+
+## 재방문 장치 (연속 출석 · 달 주기/주간 시즌 · 친구 초대 · 웹 푸시)
+보상은 전부 별가루(AI 비용 0원)이고, 서버가 하루 한 번·주간 상한으로 막아요. `backend/retention.py` 에서 숫자를 바꿔요.
+| 변수 | 기본 | 설명 |
+|---|---|---|
+| RETENTION_ENABLED | true | false 면 출석·초대·알림 전부 숨김 |
+| INVITE_WEEKLY_MAX | 5 | 한 사람이 한 주에 초대로 보상받을 수 있는 최대 횟수 |
+| VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY / VAPID_SUBJECT | (없음) | 웹 푸시용. `python backend/gen_vapid.py` 로 만든 값을 Render 환경변수에 직접 넣어요(채팅·깃허브에 붙이지 마세요) |
+| PUSH_CRON_SECRET | (없음) | 푸시 발송 주소를 보호하는 비밀 값. GitHub 저장소 Secrets 의 `PUSH_CRON_SECRET` 과 같은 값 |
+- 연속 출석: 오늘의 카드를 뽑으면 하루 한 번 기록돼요. 기본 ⭐+1, 3·7·14·30일째 보너스(⭐+1/+3/+4/+8). 하루 건너뛰면 1일부터 다시 시작해요.
+- 새달·보름달 날은 출석 보너스 ⭐+2 (천문 근사 계산이라 실제와 하루쯤 차이 날 수 있어요). 그 외에는 주간 시즌 안내(새싹·달빛·하트·별빛 주간)가 홈에 나와요.
+- 친구 초대: 공유 링크·QR 에 `?ref=내코드` 가 자동으로 붙고, 새 기기가 처음 열면 서버가 한 번만 둘 다 ⭐+5 를 줘요(가입 7일 안, 같은 네트워크 하루 2명, 초대하는 쪽 주 5명까지).
+- 웹 푸시: 매일 오전 9시 5분(한국)에 `.github/workflows/daily-push.yml` 이 `/api/push/send-daily` 를 불러요. 아이폰은 홈 화면에 설치한 뒤에만 알림을 켤 수 있어요.
+- 분석 이벤트: app_open, daily_draw, checkin, share_copy_text, invite_share, invite_redeem, push_on/off, funnel(step: welcome_view → welcome_start → onboarding_1·2·… → onboarding_done) 로 첫 카드까지 이탈 지점을 볼 수 있어요.

@@ -4,6 +4,7 @@ import logging
 import os
 import random
 import re
+import secrets
 import time
 import uuid
 from collections import defaultdict, deque
@@ -23,6 +24,8 @@ import kakao_auth
 import google_auth
 import payments
 import play
+import retention
+import webpush
 from spreads import CATEGORY_LABELS, position_labels, spread_for
 from store import InsufficientCoins, OrderError, Store
 
@@ -200,6 +203,18 @@ PLAY_DAILY_STARDUST = _env_int("PLAY_DAILY_STARDUST", 6)
 PLAY_MIN_SECONDS = _env_int("PLAY_MIN_SECONDS", 15)
 PLAY_EXCHANGE_COST = _env_int("PLAY_EXCHANGE_COST", 30)
 PLAY_EXCHANGE_PER_IP_WEEKLY = _env_int("PLAY_EXCHANGE_PER_IP_WEEKLY", 2)
+
+# 재방문 장치(연속 출석·초대·웹 푸시). 보상은 별가루뿐이라 AI 비용이 들지 않아요.
+RETENTION_ENABLED = _env_bool("RETENTION_ENABLED", True)
+INVITE_WEEKLY_MAX = _env_int("INVITE_WEEKLY_MAX", retention.INVITE_WEEKLY_MAX)
+VAPID_PUBLIC_KEY = os.getenv("VAPID_PUBLIC_KEY", "").strip()
+VAPID_PRIVATE_KEY = os.getenv("VAPID_PRIVATE_KEY", "").strip()
+VAPID_SUBJECT = os.getenv("VAPID_SUBJECT", "mailto:admin@example.com").strip()
+PUSH_CRON_SECRET = os.getenv("PUSH_CRON_SECRET", "").strip()
+
+
+def push_enabled() -> bool:
+    return bool(VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY and PUSH_CRON_SECRET)
 
 
 def _make_store() -> Store:
@@ -643,6 +658,13 @@ def get_config():
             "exchange_cost": PLAY_EXCHANGE_COST,
             "exchange_enabled": PLAY_ENABLED and paywall_enabled(),
         },
+        "retention": {
+            "enabled": RETENTION_ENABLED,
+            "push": push_enabled(),
+            "vapid_public_key": VAPID_PUBLIC_KEY if push_enabled() else "",
+            "invite_bonus": retention.INVITE_BONUS_INVITEE,
+            "streak_milestones": retention.STREAK_MILESTONES,
+        },
         "limits": {
             "enabled": LIMITS_ENABLED,
             "reading_free": LIMIT_READING_FREE,
@@ -726,6 +748,154 @@ def cardbox_claim(request: Request):
     todo = [r for r in cardbox.eligible(info["total"], info["by_month"]) if r[0] not in set(info["claims"])]
     granted = STORE.cardbox_grant(did, todo, give_stardust=PLAY_ENABLED) if todo else []
     return _cardbox_payload(did, granted)
+
+
+# ---------------------------------------------------------------------------
+# 재방문 장치: 연속 출석 · 시즌 · 친구 초대 · 웹 푸시
+# ---------------------------------------------------------------------------
+def _retention_guard(request: Request) -> str:
+    if not RETENTION_ENABLED:
+        raise api_error(404, "retention_disabled", "지금은 출석 기능을 쉬고 있어요.")
+    return device_id_from(request, required=True)
+
+
+def _retention_payload(did: str) -> dict:
+    day = today_kst()
+    ck = STORE.checkin_get(did)
+    done = ck["last_day"] == day
+    streak = ck["streak"] if (done or ck["last_day"] == retention.yesterday_of(day)) else 0
+    lunar = retention.lunar_event(day)
+    return {
+        "day": day,
+        "checked_today": done,
+        "streak": streak,
+        "best": ck["best"],
+        "total": ck["total"],
+        "next_reward": retention.streak_reward(streak + (0 if done else 1)),
+        "next_milestone": retention.next_milestone(streak),
+        "lunar": lunar,
+        "season": retention.season_for(day),
+        "stardust_enabled": PLAY_ENABLED,
+        "push_on": STORE.push_has(did),
+    }
+
+
+@app.get("/api/retention")
+def retention_state(request: Request):
+    return _retention_payload(_retention_guard(request))
+
+
+@app.post("/api/checkin")
+def checkin(request: Request):
+    """오늘의 카드를 뽑았을 때 하루 한 번 출석을 기록하고 별가루를 준다."""
+    did = _retention_guard(request)
+    day = today_kst()
+    lunar = retention.lunar_event(day)
+    res = STORE.checkin(did, day, retention.yesterday_of(day), retention.streak_reward, PLAY_ENABLED, lunar["bonus"] if lunar else 0)
+    return {**res, **_retention_payload(did)}
+
+
+def _make_invite_code() -> str:
+    alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+    return "".join(random.choice(alphabet) for _ in range(7))
+
+
+@app.get("/api/invite")
+def invite_info(request: Request):
+    did = _retention_guard(request)
+    code = STORE.invite_code(did, _make_invite_code)
+    st = STORE.invite_stats(did, time.time() - 7 * 86400)
+    return {
+        "code": code,
+        "invited_total": st["total"],
+        "invited_week": st["week"],
+        "weekly_max": INVITE_WEEKLY_MAX,
+        "bonus_inviter": retention.INVITE_BONUS_INVITER,
+        "bonus_invitee": retention.INVITE_BONUS_INVITEE,
+        "redeemed": st["redeemed"],
+        "stardust_enabled": PLAY_ENABLED,
+    }
+
+
+class InviteRedeem(BaseModel):
+    code: str = Field(..., min_length=4, max_length=12)
+
+
+@app.post("/api/invite/redeem")
+def invite_redeem(body: InviteRedeem, request: Request):
+    did = _retention_guard(request)
+    STORE.ensure_wallet(did, client_ip(request), WELCOME_COINS, WELCOME_PER_IP_DAILY)
+    res = STORE.invite_redeem(
+        did, re.sub(r"[^A-Za-z0-9]", "", body.code).upper(), client_ip(request), today_kst(),
+        retention.INVITE_BONUS_INVITER, retention.INVITE_BONUS_INVITEE, INVITE_WEEKLY_MAX,
+        retention.INVITE_PER_IP_DAILY, retention.INVITE_MAX_ACCOUNT_AGE_DAYS, PLAY_ENABLED,
+    )
+    if res != "ok":
+        msgs = {
+            "bad_code": "초대 코드를 찾을 수 없어요.",
+            "self": "내 초대 코드는 쓸 수 없어요.",
+            "used": "이미 초대 코드를 사용했어요.",
+            "too_old": "초대 코드는 처음 접속하고 일주일 안에만 쓸 수 있어요.",
+            "inviter_full": "이 코드는 이번 주 초대 한도를 다 썼어요.",
+            "ip": "같은 네트워크에서는 하루에 쓸 수 있는 횟수가 정해져 있어요.",
+        }
+        raise api_error(400, res, msgs.get(res, "사용할 수 없는 코드예요."))
+    return {"ok": True, "gain": retention.INVITE_BONUS_INVITEE if PLAY_ENABLED else 0}
+
+
+class PushSub(BaseModel):
+    endpoint: str = Field(..., min_length=10, max_length=600)
+    p256dh: str = Field(..., min_length=10, max_length=200)
+    auth: str = Field(..., min_length=4, max_length=100)
+
+
+@app.post("/api/push/subscribe")
+def push_subscribe(body: PushSub, request: Request):
+    did = _retention_guard(request)
+    if not push_enabled():
+        raise api_error(404, "push_disabled", "알림 기능이 아직 준비되지 않았어요.")
+    if not body.endpoint.startswith("https://"):
+        raise api_error(400, "bad_endpoint", "잘못된 알림 주소예요.")
+    STORE.push_add(did, body.endpoint, body.p256dh, body.auth)
+    return {"ok": True}
+
+
+@app.post("/api/push/unsubscribe")
+def push_unsubscribe(request: Request):
+    did = _retention_guard(request)
+    STORE.push_remove(did)
+    return {"ok": True}
+
+
+def _send_one_push(sub: dict, payload: str) -> str:
+    """'ok' | 'dead'(구독 만료) | 'fail'"""
+    return webpush.send(sub, payload, VAPID_PRIVATE_KEY, VAPID_PUBLIC_KEY, VAPID_SUBJECT)
+
+
+@app.post("/api/push/send-daily")
+async def push_send_daily(request: Request):
+    """하루 한 번 외부 스케줄러(GitHub Actions 등)가 부르는 주소. 비밀 값이 맞아야만 동작해요."""
+    if not push_enabled():
+        raise api_error(404, "push_disabled")
+    given = (request.headers.get("x-cron-secret") or "").strip()
+    if not given or not secrets.compare_digest(given, PUSH_CRON_SECRET):
+        raise api_error(403, "forbidden")
+    day = today_kst()
+    subs = await run_in_threadpool(STORE.push_due, day, 500)
+    sent = dead = failed = 0
+    for sub in subs:
+        msg = retention.push_message(sub["streak"], sub["last_day"] == day, day)
+        payload = json.dumps({**msg, "url": "/"}, ensure_ascii=False)
+        res = await run_in_threadpool(_send_one_push, sub, payload)
+        if res == "fail":
+            failed += 1
+            continue
+        await run_in_threadpool(STORE.push_mark, sub["endpoint"], day, res == "dead")
+        if res == "ok":
+            sent += 1
+        else:
+            dead += 1
+    return {"day": day, "sent": sent, "dead": dead, "failed": failed, "remaining": max(0, len(subs) - sent - dead - failed)}
 
 
 @app.get("/api/play/state")

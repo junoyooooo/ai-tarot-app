@@ -31,6 +31,7 @@ export default defineConfig(({ mode }) => ({
       registerType: 'autoUpdate',
       injectRegister: false, // src/lib/pwa.js 에서 직접 등록해요
       workbox: {
+        importScripts: ['push-sw.js'],
         skipWaiting: true,
         clientsClaim: true,
         cleanupOutdatedCaches: true,

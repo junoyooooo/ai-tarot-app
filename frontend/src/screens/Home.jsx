@@ -12,6 +12,10 @@ import { playSfx } from '../lib/sound';
 import { upcomingSpecial } from '../lib/specialDays';
 import { CATEGORIES, categoryByKey } from '../lib/categories';
 import CheerShare from '../components/CheerShare';
+import StreakCard from '../components/StreakCard';
+import { fetchRetention, postCheckin } from '../lib/api';
+import { track } from '../lib/analytics';
+import { ensureInviteCode, redeemPendingRef } from '../lib/retention';
 import { getDaily, saveDaily, todayKey } from '../lib/storage';
 import { getDailyCard, getDailyMessage, getKoName, TAROT_CARDS, cleanName } from '../tarotData';
 
@@ -42,6 +46,45 @@ export default function Home({ profile, history, onStartConsult, onOpenEntry, on
   useEffect(() => () => timers.current.forEach(clearTimeout), []);
   const special = useMemo(() => upcomingSpecial(new Date(), 3), []);
 
+  // 연속 출석: 오늘의 카드를 뽑으면 서버에 하루 한 번 기록돼요. (이미 뽑은 날 처음 열어도 한 번 확인해요)
+  const retOn = wallet?.config?.retention?.enabled;
+  const [ret, setRet] = useState(null);
+  const notify = wallet?.notify;
+  useEffect(() => {
+    if (!retOn) return;
+    let alive = true;
+    fetchRetention()
+      .then((r) => {
+        if (!alive) return;
+        setRet(r);
+        if (daily && !r.checked_today) doCheckin();
+      })
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [retOn]);
+  useEffect(() => {
+    if (!retOn) return;
+    track('app_open');
+    ensureInviteCode().catch(() => {});
+    redeemPendingRef().then((r) => {
+      if (r?.gain && notify) notify(`친구 초대 보상으로 별가루 ${r.gain}개를 받았어요 ⭐`);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [retOn]);
+  const doCheckin = () =>
+    postCheckin()
+      .then((r) => {
+        setRet(r);
+        if (!r.already) {
+          track('checkin', { streak: r.streak });
+          if (r.gain && notify) notify(`${r.streak}일 연속 출석! 별가루 ${r.gain}개를 받았어요 ⭐`);
+        }
+      })
+      .catch(() => {});
+
   const name = cleanName(profile.name);
   const card = daily ? TAROT_CARDS.find((c) => c.id === daily.cardId) : getDailyCard(profile.name, profile.birthdate, today);
 
@@ -52,6 +95,8 @@ export default function Home({ profile, history, onStartConsult, onOpenEntry, on
     setDaily(next);
     setFlipped(true);
     revealText();
+    track('daily_draw', { first: !daily });
+    if (retOn) doCheckin();
   };
 
   const revealText = () =>
@@ -170,6 +215,8 @@ export default function Home({ profile, history, onStartConsult, onOpenEntry, on
           )}
         </div>
       </div>
+
+      <StreakCard ret={ret} onStartConsult={onStartConsult} />
 
       {/* 고민 종류 */}
       <h2 className="mt-8 mb-3 text-[19px] font-extrabold text-ink">어떤 고민이 있어요?</h2>

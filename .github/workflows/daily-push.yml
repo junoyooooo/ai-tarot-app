@@ -1,0 +1,23 @@
+# 매일 아침 9시(한국 시간)에 "오늘의 카드" 웹 푸시 알림을 보냅니다.
+# 설정: GitHub 저장소 Settings → Secrets and variables → Actions 에 PUSH_CRON_SECRET 을 Render 와 같은 값으로 넣어 주세요.
+name: daily-push
+on:
+  schedule:
+    - cron: "5 0 * * *" # 00:05 UTC = 09:05 KST
+  workflow_dispatch: {}
+jobs:
+  push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send daily push
+        env:
+          PUSH_CRON_SECRET: ${{ secrets.PUSH_CRON_SECRET }}
+          API_URL: ${{ vars.API_URL || 'https://ai-tarot-app-tznp.onrender.com' }}
+        run: |
+          if [ -z "$PUSH_CRON_SECRET" ]; then echo "PUSH_CRON_SECRET 이 없어 건너뜁니다."; exit 0; fi
+          # Render 무료 서버는 잠들어 있을 수 있어 깨우고 여러 번 시도해요.
+          curl -sS --retry 5 --retry-delay 20 --retry-all-errors --max-time 90 "$API_URL/health" >/dev/null || true
+          for i in 1 2 3; do
+            out=$(curl -sS --max-time 120 -X POST -H "X-Cron-Secret: $PUSH_CRON_SECRET" "$API_URL/api/push/send-daily") && echo "$out" && break
+            sleep 30
+          done

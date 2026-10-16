@@ -11,6 +11,7 @@ import Help from './screens/Help';
 import Play from './screens/Play';
 import Welcome from './screens/Welcome';
 import { getProfile, saveProfile, getHistory } from './lib/storage';
+import { track } from './lib/analytics';
 import { getAccount, pendingKakaoCallback, finishKakaoLogin, clearCallbackFromUrl } from './lib/auth';
 
 export default function App() {
@@ -27,7 +28,12 @@ export default function App() {
       return false;
     }
   });
+  useEffect(() => {
+    if (!welcomed) track('funnel', { step: 'welcome_view' });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const finishWelcome = () => {
+    track('funnel', { step: 'welcome_start' });
     try {
       window.localStorage.setItem('tarot.v1.welcomed', '1');
     } catch {

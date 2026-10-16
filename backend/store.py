@@ -188,6 +188,32 @@ CREATE TABLE IF NOT EXISTS orders (
     created_at REAL NOT NULL,
     paid_at REAL
 );
+CREATE TABLE IF NOT EXISTS checkins (
+    device_id TEXT PRIMARY KEY,
+    last_day TEXT NOT NULL DEFAULT '',
+    streak INTEGER NOT NULL DEFAULT 0,
+    best INTEGER NOT NULL DEFAULT 0,
+    total INTEGER NOT NULL DEFAULT 0
+);
+CREATE TABLE IF NOT EXISTS invite_codes (
+    code TEXT PRIMARY KEY,
+    device_id TEXT NOT NULL UNIQUE
+);
+CREATE TABLE IF NOT EXISTS referrals (
+    invitee_id TEXT PRIMARY KEY,
+    inviter_id TEXT NOT NULL,
+    ip_hash TEXT NOT NULL,
+    day TEXT NOT NULL,
+    created_at REAL NOT NULL
+);
+CREATE TABLE IF NOT EXISTS push_subs (
+    endpoint TEXT PRIMARY KEY,
+    device_id TEXT NOT NULL,
+    p256dh TEXT NOT NULL,
+    auth TEXT NOT NULL,
+    last_sent_day TEXT NOT NULL DEFAULT '',
+    created_at REAL NOT NULL
+);
 """
 
 
@@ -638,3 +664,111 @@ class Store:
             c.execute("INSERT INTO exchange_grants(ip_hash, week) VALUES (?,?)", (h, week))
             self._grant(c, device_id, 1, "stardust_exchange", week)
             return "ok"
+
+    # ------------------------------------------------------------------ 연속 출석(스트릭)
+    def checkin_get(self, device_id: str) -> Dict[str, Any]:
+        with self._read() as c:
+            row = c.execute("SELECT * FROM checkins WHERE device_id=?", (device_id,)).fetchone()
+        return dict(row) if row else {"device_id": device_id, "last_day": "", "streak": 0, "best": 0, "total": 0}
+
+    def checkin(self, device_id: str, day: str, yesterday: str, reward_fn, give_stardust: bool, lunar_bonus: int = 0) -> Dict[str, Any]:
+        """오늘 출석을 한 번만 기록한다. 어제도 했으면 스트릭을 잇고, 아니면 1부터 다시 시작한다."""
+        with self._tx() as c:
+            row = c.execute("SELECT * FROM checkins WHERE device_id=?", (device_id,)).fetchone()
+            if row and row["last_day"] == day:
+                return {"already": True, "streak": row["streak"], "best": row["best"], "total": row["total"], "gain": 0, "bonus": 0}
+            prev = row["streak"] if row and row["last_day"] == yesterday else 0
+            streak = prev + 1
+            best = max(streak, row["best"] if row else 0)
+            total = (row["total"] if row else 0) + 1
+            if row:
+                c.execute("UPDATE checkins SET last_day=?, streak=?, best=?, total=? WHERE device_id=?", (day, streak, best, total, device_id))
+            else:
+                c.execute("INSERT INTO checkins(device_id, last_day, streak, best, total) VALUES (?,?,?,?,?)", (device_id, day, streak, best, total))
+            gain = reward_fn(streak) + lunar_bonus if give_stardust else 0
+            if gain:
+                self._play_row(c, device_id)
+                c.execute("UPDATE play_state SET stardust = stardust + ? WHERE device_id=?", (gain, device_id))
+            return {"already": False, "streak": streak, "best": best, "total": total, "gain": gain, "bonus": lunar_bonus if give_stardust else 0}
+
+    # ------------------------------------------------------------------ 친구 초대
+    def invite_code(self, device_id: str, make_code) -> str:
+        with self._tx() as c:
+            row = c.execute("SELECT code FROM invite_codes WHERE device_id=?", (device_id,)).fetchone()
+            if row:
+                return row["code"]
+            for _ in range(10):
+                code = make_code()
+                if c.execute("SELECT 1 FROM invite_codes WHERE code=?", (code,)).fetchone() is None:
+                    c.execute("INSERT INTO invite_codes(code, device_id) VALUES (?,?)", (code, device_id))
+                    return code
+        raise RuntimeError("invite code")
+
+    def invite_stats(self, device_id: str, since: float) -> Dict[str, int]:
+        with self._read() as c:
+            total = c.execute("SELECT COUNT(*) FROM referrals WHERE inviter_id=?", (device_id,)).fetchone()[0]
+            week = c.execute("SELECT COUNT(*) FROM referrals WHERE inviter_id=? AND created_at>?", (device_id, since)).fetchone()[0]
+            joined = c.execute("SELECT 1 FROM referrals WHERE invitee_id=?", (device_id,)).fetchone() is not None
+        return {"total": total, "week": week, "redeemed": joined}
+
+    def invite_redeem(self, invitee: str, code: str, ip: str, day: str, bonus_inviter: int, bonus_invitee: int,
+                      weekly_max: int, per_ip_daily: int, max_age_days: int, give_stardust: bool) -> str:
+        """초대 코드를 한 번 쓴다. 'ok'|'bad_code'|'self'|'used'|'too_old'|'inviter_full'|'ip'"""
+        now = time.time()
+        with self._tx() as c:
+            row = c.execute("SELECT device_id FROM invite_codes WHERE code=?", (code,)).fetchone()
+            if row is None:
+                return "bad_code"
+            inviter = row["device_id"]
+            if inviter == invitee:
+                return "self"
+            if c.execute("SELECT 1 FROM referrals WHERE invitee_id=?", (invitee,)).fetchone():
+                return "used"
+            w = c.execute("SELECT created_at FROM wallets WHERE device_id=?", (invitee,)).fetchone()
+            if w is not None and now - w["created_at"] > max_age_days * 86400:
+                return "too_old"
+            if c.execute("SELECT COUNT(*) FROM referrals WHERE inviter_id=? AND created_at>?", (inviter, now - 7 * 86400)).fetchone()[0] >= weekly_max:
+                return "inviter_full"
+            h = self._ip_hash(ip or "unknown")
+            if c.execute("SELECT COUNT(*) FROM referrals WHERE ip_hash=? AND day=?", (h, day)).fetchone()[0] >= per_ip_daily:
+                return "ip"
+            c.execute("INSERT INTO referrals(invitee_id, inviter_id, ip_hash, day, created_at) VALUES (?,?,?,?,?)", (invitee, inviter, h, day, now))
+            if give_stardust:
+                for did, amt in ((inviter, bonus_inviter), (invitee, bonus_invitee)):
+                    self._play_row(c, did)
+                    c.execute("UPDATE play_state SET stardust = stardust + ? WHERE device_id=?", (amt, did))
+            return "ok"
+
+    # ------------------------------------------------------------------ 웹 푸시 구독
+    def push_add(self, device_id: str, endpoint: str, p256dh: str, auth: str) -> None:
+        with self._tx() as c:
+            c.execute("DELETE FROM push_subs WHERE endpoint=?", (endpoint,))
+            c.execute("INSERT INTO push_subs(endpoint, device_id, p256dh, auth, created_at) VALUES (?,?,?,?,?)", (endpoint, device_id, p256dh, auth, time.time()))
+
+    def push_remove(self, device_id: str, endpoint: Optional[str] = None) -> int:
+        with self._tx() as c:
+            if endpoint:
+                cur = c.execute("DELETE FROM push_subs WHERE device_id=? AND endpoint=?", (device_id, endpoint))
+            else:
+                cur = c.execute("DELETE FROM push_subs WHERE device_id=?", (device_id,))
+            return cur.rowcount
+
+    def push_has(self, device_id: str) -> bool:
+        with self._read() as c:
+            return c.execute("SELECT 1 FROM push_subs WHERE device_id=? LIMIT 1", (device_id,)).fetchone() is not None
+
+    def push_due(self, day: str, limit: int = 500) -> list:
+        with self._read() as c:
+            rows = c.execute(
+                "SELECT p.endpoint, p.device_id, p.p256dh, p.auth, COALESCE(k.last_day,'') AS last_day, COALESCE(k.streak,0) AS streak "
+                "FROM push_subs p LEFT JOIN checkins k ON k.device_id=p.device_id WHERE p.last_sent_day != ? LIMIT ?",
+                (day, limit),
+            ).fetchall()
+        return [dict(r) for r in rows]
+
+    def push_mark(self, endpoint: str, day: str, dead: bool = False) -> None:
+        with self._tx() as c:
+            if dead:
+                c.execute("DELETE FROM push_subs WHERE endpoint=?", (endpoint,))
+            else:
+                c.execute("UPDATE push_subs SET last_sent_day=? WHERE endpoint=?", (day, endpoint))

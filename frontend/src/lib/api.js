@@ -68,3 +68,11 @@ export const claimCardbox = () => request('/api/cardbox/claim', { method: 'POST'
 // 타로 RPG(걱정덩어리): 승패와 피해량은 서버가 정해요
 export const rpgStart = () => request('/api/rpg/start', { method: 'POST', timeoutMs: 20000 });
 export const rpgTurn = (run_id, action) => request('/api/rpg/turn', { method: 'POST', body: { run_id, action }, timeoutMs: 20000 });
+
+// 재방문 장치: 연속 출석 · 친구 초대 · 웹 푸시
+export const fetchRetention = () => request('/api/retention', { timeoutMs: 20000 });
+export const postCheckin = () => request('/api/checkin', { method: 'POST', timeoutMs: 20000 });
+export const fetchInvite = () => request('/api/invite', { timeoutMs: 20000 });
+export const redeemInvite = (code) => request('/api/invite/redeem', { method: 'POST', body: { code }, timeoutMs: 20000 });
+export const pushSubscribe = (sub) => request('/api/push/subscribe', { method: 'POST', body: sub, timeoutMs: 20000 });
+export const pushUnsubscribe = () => request('/api/push/unsubscribe', { method: 'POST', timeoutMs: 20000 });

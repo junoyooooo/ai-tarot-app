@@ -73,6 +73,17 @@ TOSS_IAP_SKU_COIN3 = os.getenv("TOSS_IAP_SKU_COIN3", "ait.0000087437.c4cd615f.95
 TOSS_IAP_PRODUCTS: List[Dict[str, Any]] = [
     {"sku": TOSS_IAP_SKU_COIN3, "name": "별빛 코인 3개", "price": 1980, "coins": 3},
 ]
+# 더 큰 묶음: 콘솔에 상품을 등록하고 상품 ID 를 환경변수로 넣으면 자동으로 노출돼요.
+for _env, _name, _price, _coins, _badge in (
+    ("TOSS_IAP_SKU_COIN8", "별빛 코인 8개", 4900, 8, None),
+    ("TOSS_IAP_SKU_COIN20", "별빛 코인 20개", 9900, 20, "가장 알뜰"),
+):
+    _sku = os.getenv(_env, "").strip()
+    if _sku:
+        _p = {"sku": _sku, "name": _name, "price": _price, "coins": _coins}
+        if _badge:
+            _p["badge"] = _badge
+        TOSS_IAP_PRODUCTS.append(_p)
 TOSS_IAP_BY_SKU = {p["sku"]: p for p in TOSS_IAP_PRODUCTS}
 TOSS_IAP_ORDER_STATUS_URL = "https://apps-in-toss-api.toss.im/api-partner/v1/apps-in-toss/order/get-order-status"
 

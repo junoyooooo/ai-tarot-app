@@ -74,11 +74,11 @@ TOSS_IAP_PRODUCTS: List[Dict[str, Any]] = [
     {"sku": TOSS_IAP_SKU_COIN3, "name": "별빛 코인 3개", "price": 1980, "coins": 3},
 ]
 # 더 큰 묶음: 콘솔에 상품을 등록하고 상품 ID 를 환경변수로 넣으면 자동으로 노출돼요.
-for _env, _name, _price, _coins, _badge in (
-    ("TOSS_IAP_SKU_COIN8", "별빛 코인 8개", 4950, 8, None),
-    ("TOSS_IAP_SKU_COIN20", "별빛 코인 20개", 9900, 20, "가장 알뜰"),
+for _env, _name, _price, _coins, _badge, _default in (
+    ("TOSS_IAP_SKU_COIN8", "별빛 코인 8개", 4950, 8, None, "ait.0000087437.94682728.909a65d387.2632839657"),
+    ("TOSS_IAP_SKU_COIN20", "별빛 코인 20개", 9900, 20, "가장 알뜰", "ait.0000087437.69be1435.55b3ee47d5.2632883384"),
 ):
-    _sku = os.getenv(_env, "").strip()
+    _sku = os.getenv(_env, _default).strip()
     if _sku:
         _p = {"sku": _sku, "name": _name, "price": _price, "coins": _coins}
         if _badge:

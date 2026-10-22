@@ -107,3 +107,13 @@ Gemini 무료 등급은 분당·일일 요청 수가 제한돼요(숫자는 바�
 - 친구 초대: 공유 링크·QR 에 `?ref=내코드` 가 자동으로 붙고, 새 기기가 처음 열면 서버가 한 번만 둘 다 ⭐+5 를 줘요(가입 7일 안, 같은 네트워크 하루 2명, 초대하는 쪽 주 5명까지).
 - 웹 푸시: 매일 오전 9시 5분(한국)에 `.github/workflows/daily-push.yml` 이 `/api/push/send-daily` 를 불러요. 아이폰은 홈 화면에 설치한 뒤에만 알림을 켤 수 있어요.
 - 분석 이벤트: app_open, daily_draw, checkin, share_copy_text, invite_share, invite_redeem, push_on/off, funnel(step: welcome_view → welcome_start → onboarding_1·2·… → onboarding_done) 로 첫 카드까지 이탈 지점을 볼 수 있어요.
+
+## 앱인토스(토스 앱) 인앱결제
+토스 앱(프론트가 `X-Platform: toss` 헤더를 보냄)에서만 코인·결제가 켜져요. 웹에는 영향이 없어요.
+| 변수 | 설명 |
+|---|---|
+| TOSS_PAYWALL_ENABLED | true 면 토스 앱에서만 코인 잠금·충전 UI가 켜져요 |
+| TOSS_MTLS_CERT_PATH / TOSS_MTLS_KEY_PATH | 앱인토스 콘솔에서 받은 mTLS 인증서·개인키 경로. Render Secret Files 는 `/etc/secrets/<파일이름>` |
+| TOSS_IAP_SKU_COIN3 | 콘솔에 등록한 '별빛 코인 3개' 상품 ID (기본값 내장) |
+- 서버는 `POST /api/checkout/toss-iap` 에서 앱인토스 `get-order-status`(mTLS)로 주문을 확인한 뒤(PAYMENT_COMPLETED/PURCHASED + sku 일치), 같은 주문 ID는 한 번만 지급해요.
+- 인증서가 없으면 토스 앱의 충전 화면은 '준비 중'으로 보여요.

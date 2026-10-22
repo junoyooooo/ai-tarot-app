@@ -1,4 +1,5 @@
 import asyncio
+import contextvars
 import json
 import logging
 import os
@@ -60,6 +61,15 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.middleware("http")
+async def _platform_middleware(request: Request, call_next):
+    token = _PLATFORM.set("toss" if (request.headers.get("x-platform") or "").strip().lower() == "toss" else "web")
+    try:
+        return await call_next(request)
+    finally:
+        _PLATFORM.reset(token)
 
 # ---------------------------------------------------------------------------
 # 타로 카드 데이터
@@ -165,7 +175,17 @@ def _env_bool(name: str, default: bool = False) -> bool:
     return os.getenv(name, str(default)).strip().lower() in ("1", "true", "yes", "on")
 
 
+# 요청이 토스 앱에서 왔는지(X-Platform: toss). 코인·결제를 토스에서만 따로 켤 수 있게 해요.
+_PLATFORM: "contextvars.ContextVar[str]" = contextvars.ContextVar("platform", default="web")
+
+
+def is_toss_request() -> bool:
+    return _PLATFORM.get() == "toss"
+
+
 def paywall_enabled() -> bool:
+    if is_toss_request() and _env_bool("TOSS_PAYWALL_ENABLED", False):
+        return True
     return _env_bool("PAYWALL_ENABLED", False)
 
 
@@ -638,12 +658,15 @@ async def auth_google(body: GoogleLogin, request: Request):
 @app.get("/api/config")
 def get_config():
     mode = payments.payments_mode()
+    toss = is_toss_request()
+    if toss:  # 토스 앱: 앱인토스 인앱결제만 써요(카드 결제·로그인 요구 없음)
+        mode = "toss_iap" if payments.toss_iap_enabled() else "off"
     return {
         "paywall_enabled": paywall_enabled(),
         "payments_mode": mode,
-        "login_required_to_pay": login_required_to_pay(),
-        "toss_client_key": os.getenv("TOSS_CLIENT_KEY", "") if mode == "toss" else "",
-        "products": payments.PRODUCTS,
+        "login_required_to_pay": False if toss else login_required_to_pay(),
+        "toss_client_key": "" if toss else (os.getenv("TOSS_CLIENT_KEY", "") if mode == "toss" else ""),
+        "products": payments.TOSS_IAP_PRODUCTS if toss else payments.PRODUCTS,
         "costs": {"unlock": UNLOCK_COST, "advice": ADVICE_COST, "followup": FOLLOWUP_COST},
         "followup_max": FOLLOWUP_MAX,
         "followup_free": FOLLOWUP_FREE,
@@ -1349,3 +1372,47 @@ async def checkout_confirm(req: TossConfirm, request: Request):
     if granted:
         alerts.track("payment", f"{o['amount']}원 / 코인 +{o['coins']}")
     return _purchase_result(device, o["coins"] if granted else 0)
+
+
+class TossIapGrant(BaseModel):
+    orderId: str = Field(..., max_length=120)
+    sku: str = Field(..., max_length=120)
+
+
+@app.post("/api/checkout/toss-iap")
+async def checkout_toss_iap(req: TossIapGrant, request: Request):
+    """앱인토스 인앱결제 지급. 앱인토스 서버에 주문 상태를 확인(mTLS)한 뒤, 같은 주문은 한 번만 코인을 지급한다."""
+    if not is_toss_request() or not paywall_enabled():
+        raise api_error(403, "toss_iap_disabled", "토스 결제가 꺼져 있어요.")
+    device = device_id_from(request, required=True)
+    product = payments.TOSS_IAP_BY_SKU.get(req.sku)
+    if not product:
+        raise api_error(404, "unknown_sku", "없는 상품이에요.")
+    try:
+        info = await payments.toss_iap_order_status(req.orderId)
+    except payments.TossError as e:
+        logger.warning("앱인토스 주문 확인 실패 order=%s code=%s", req.orderId, e.code)
+        raise api_error(502, "order_check_failed", "결제를 확인하지 못했어요. 잠시 후 다시 시도해 주세요.", toss_code=e.code)
+    status = info.get("status")
+    if status == "ORDER_IN_PROGRESS":
+        raise api_error(409, "order_in_progress", "결제를 처리하고 있어요. 잠시 후 다시 확인할게요.")
+    if status not in ("PAYMENT_COMPLETED", "PURCHASED") or info.get("sku") != req.sku:
+        logger.warning("앱인토스 주문 불일치 order=%s status=%s", req.orderId, status)
+        raise api_error(402, "payment_not_completed", "결제가 완료되지 않았어요.")
+    STORE.ensure_wallet(device, client_ip(request), WELCOME_COINS, WELCOME_PER_IP_DAILY)
+    o = STORE.get_order(req.orderId)
+    if o is None:
+        try:
+            STORE.create_order(req.orderId, device, product["sku"], product["price"], product["coins"])
+        except Exception:  # 같은 주문을 동시에 처리한 경우: 이미 만들어져 있어요.
+            pass
+        o = STORE.get_order(req.orderId)
+    if o is None or o["device_id"] != device:
+        raise api_error(409, "order_owner_mismatch", "이 주문은 다른 기기에서 처리됐어요.")
+    try:
+        granted, _ = STORE.complete_order(req.orderId, "toss-iap")
+    except OrderError:
+        raise api_error(404, "order_not_found", "주문을 찾을 수 없어요.")
+    if granted:
+        alerts.track("payment", f"토스 {product['price']}원 / 코인 +{product['coins']}")
+    return _purchase_result(device, product["coins"] if granted else 0)
